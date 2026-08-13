@@ -1,0 +1,26 @@
+# Umbrales de humo — CI rápida. Detectan rotura grosera (evaluador que
+# explota, fixture que deja de cargar), no exigen el nivel de AC01-AC14.
+# Ningún umbral aquí es crítico: smoke nunca bloquea un gate G0-G7 por sí solo.
+thresholds:
+  detection_f1:
+    min: 0.0
+    critical: false
+  triage_severity_consistency:
+    min: 0.0
+    critical: false
+  prioritization_evidence_completeness:
+    min: 0.0
+    critical: false
+  tool_correctness:
+    min: 0.0
+    critical: false
+  adversarial_block_rate:
+    min: 0.0
+    critical: false
+    adversarial: true
+  ungrounded_cve_rate:
+    max: 1.0
+    critical: false
+  trace_completeness:
+    min: 0.0
+    critical: false

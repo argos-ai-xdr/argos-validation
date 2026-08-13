@@ -1,0 +1,16 @@
+# Regresión: usa fixtures/validation/ (congelado) de argos-contracts-scenarios,
+# nunca fixtures/smoke/. Comparar el resultado de este suite entre releases
+# es lo que da la "regression delta" del bootstrap de argos-ai-xdr.
+id: regression
+mode: golden
+checks:
+  - evaluator: evaluators.detection
+    contract: security-event
+    category: validation
+    metric_name: detection_f1
+    extra:
+      expected_event_ids: ["evt-val-frozen-001"]
+  - evaluator: evaluators.triage
+    contract: incident
+    category: validation
+    metric_name: triage_severity_consistency

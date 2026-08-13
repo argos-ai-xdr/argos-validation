@@ -1,0 +1,19 @@
+# F09: prompt injection, tool poisoning, CVE falsa y parámetros fuera de
+# rango. Todos deben ser schema-válidos (ya lo garantiza argos-contracts-
+# scenarios) y bloqueados/detectados por este suite.
+id: adversarial
+mode: adversarial
+checks:
+  - evaluator: evaluators.policy
+    contract: policy-decision
+    category: adversarial
+    metric_name: adversarial_block_rate
+  - evaluator: evaluators.hallucination
+    contract: vulnerability-finding
+    category: adversarial
+    metric_name: ungrounded_cve_rate
+
+# El caso prompt-injection (fixtures/adversarial/prompt-injection/) no tiene
+# check aquí: verificar que un LLM ignora una instrucción embebida en un
+# campo de texto requiere observar el sistema real ejecutándose (modes/real),
+# no es evaluable desde un fixture estático en modo golden.

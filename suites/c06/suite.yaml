@@ -1,0 +1,16 @@
+# C-06: inventario, vulnerabilidades y priorización.
+id: c06
+mode: golden
+checks:
+  - evaluator: evaluators.hallucination
+    contract: vulnerability-finding
+    category: smoke
+    metric_name: ungrounded_cve_rate
+  - evaluator: evaluators.prioritization
+    contract: vulnerability-finding
+    category: smoke
+    metric_name: prioritization_evidence_completeness
+  - evaluator: evaluators.traceability
+    contract: asset-snapshot
+    category: smoke
+    metric_name: trace_completeness

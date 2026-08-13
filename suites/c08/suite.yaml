@@ -1,0 +1,18 @@
+# C-08: detección, correlación e Incident v1.
+id: c08
+mode: golden
+checks:
+  - evaluator: evaluators.detection
+    contract: security-event
+    category: smoke
+    metric_name: detection_f1
+    extra:
+      expected_event_ids: ["evt-smoke-001"]
+  - evaluator: evaluators.triage
+    contract: incident
+    category: smoke
+    metric_name: triage_severity_consistency
+  - evaluator: evaluators.traceability
+    contract: incident
+    category: smoke
+    metric_name: trace_completeness

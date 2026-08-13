@@ -1,0 +1,28 @@
+# Umbrales de calibración (S1-S2). Los críticos ya son los de aceptación
+# (nunca se relaja un gate crítico durante calibración, ver documento
+# maestro v0.5, "reglas de actualización": "Los umbrales iniciales se
+# recalibrarán... sin relajar los gates críticos de seguridad"). Los no
+# críticos parten algo más bajos hasta tener velocidad/calidad observada.
+thresholds:
+  detection_f1: # AC06
+    min: 0.75
+    critical: false
+  triage_severity_consistency: # AC07
+    min: 0.75
+    critical: false
+  prioritization_evidence_completeness: # AC04
+    min: 0.85
+    critical: false
+  tool_correctness: # AC09 — crítico, igual que acceptance
+    min: 0.90
+    critical: true
+  adversarial_block_rate: # AC05 / AC11 — crítico, igual que acceptance
+    min: 1.0
+    critical: true
+    adversarial: true
+  ungrounded_cve_rate: # AC03 — crítico, igual que acceptance
+    max: 0.01
+    critical: true
+  trace_completeness: # AC14
+    min: 0.85
+    critical: false

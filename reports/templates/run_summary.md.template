@@ -1,0 +1,17 @@
+# Resultado de validación — $suite ($mode)
+
+* **run_id**: $run_id
+* **Generado**: $generated_at
+* **Resultado global**: $overall
+
+## Gates
+
+$gate_rows
+
+## Fallos críticos
+
+$critical_failures
+
+## Avisos (no críticos)
+
+$warnings

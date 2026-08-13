@@ -1,0 +1,8 @@
+# Ground truth operativo del escenario, para uso directo del harness (no
+# duplica argos-contracts-scenarios/scenarios/ARGOS-CYB-01/ground-truth/,
+# que documenta F01-F09 en prosa; esto es lo que evaluators.detection
+# consume literalmente vía suites/argos-cyb-01/suite.yaml).
+scenario: ARGOS-CYB-01
+expected_event_ids:
+  - evt-smoke-001
+source: "argos-contracts-scenarios/fixtures/smoke/security-event/wazuh-alert-001.json"

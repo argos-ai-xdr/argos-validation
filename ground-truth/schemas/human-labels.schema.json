@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/argos-ai-xdr/argos-validation/ground-truth/schemas/human-labels.schema.json",
+  "title": "Ground truth de acuerdo juez-humano",
+  "description": "Consumido por evaluators.human_agreement. No existe ningún manifiesto real todavía (ver ground-truth/manifests/README.md) — SOC Analyst/Approver debe etiquetar una muestra en S1-S2.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["labeled_by", "labeled_at", "labels"],
+  "properties": {
+    "labeled_by": { "type": "string", "description": "rol RACI, ver argos-control/governance/raci/raci.md" },
+    "labeled_at": { "type": "string", "format": "date-time" },
+    "labels": {
+      "type": "object",
+      "description": "id de recomendación/decisión -> etiqueta humana",
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}

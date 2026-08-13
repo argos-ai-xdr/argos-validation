@@ -1,0 +1,16 @@
+name: argos-validation
+domain: evaluation
+criticality: critical
+owner: ai-evaluation
+backup_owner: qa-security-observer
+classification: internal
+lifecycle: active
+artifacts:
+  - evaluation-harness
+  - run-summary-schema
+  - quality-gate-thresholds
+dependencies:
+  - argos-contracts-scenarios
+consumed_by:
+  - argos-control
+proposal_source: ARGOS_Propuesta_Tecnica_Maestro_Vivo_v0.5.docx

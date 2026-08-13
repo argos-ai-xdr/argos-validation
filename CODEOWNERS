@@ -1,0 +1,9 @@
+# CODEOWNERS — sustituir los roles por handles de GitHub durante S1.
+# Roles: ver argos-control/governance/raci/raci.md
+
+*                    @delivery-lead @ai-evaluation
+
+/thresholds/         @ai-evaluation @qa-security-observer
+/suites/adversarial/ @qa-security-observer
+/evaluators/policy/  @qa-security-observer
+/reports/            @ai-evaluation @qa-security-observer

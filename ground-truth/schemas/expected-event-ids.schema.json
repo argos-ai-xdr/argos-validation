@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/argos-ai-xdr/argos-validation/ground-truth/schemas/expected-event-ids.schema.json",
+  "title": "Ground truth de detección — event_id esperados",
+  "description": "Consumido por evaluators.detection vía suites/*/suite.yaml (extra.expected_event_ids).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scenario", "expected_event_ids"],
+  "properties": {
+    "scenario": { "type": "string" },
+    "expected_event_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    }
+  }
+}

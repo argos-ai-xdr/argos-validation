@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/argos-ai-xdr/argos-validation/reports/schemas/run_summary.schema.json",
+  "title": "run_summary.json",
+  "description": "Estructura real producida por harness.reporters.run_summary.build_run_summary (documento maestro v0.5, 5.8).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run_id", "suite", "mode", "generated_at", "results", "overall", "critical_failures", "warnings"],
+  "properties": {
+    "run_id": { "type": "string" },
+    "suite": { "type": "string" },
+    "mode": { "type": "string", "enum": ["golden", "mock", "real", "adversarial"] },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "overall": { "type": "string", "enum": ["PASS", "FAIL", "PASS_WITH_EXPECTED_BLOCKS"] },
+    "critical_failures": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "results": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metric", "gate", "reason", "critical"],
+        "properties": {
+          "gate": { "type": "string", "enum": ["PASS", "FAIL", "PASS_WITH_EXPECTED_BLOCKS"] },
+          "reason": { "type": "string" },
+          "critical": { "type": "boolean" },
+          "metric": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "value", "detail", "ac_ids", "sample_size"],
+            "properties": {
+              "name": { "type": "string" },
+              "value": { "type": "number" },
+              "detail": { "type": "string" },
+              "ac_ids": { "type": "array", "items": { "type": "string" } },
+              "sample_size": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

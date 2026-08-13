@@ -1,0 +1,34 @@
+# ARGOS-CYB-01: extremo a extremo, sobre los fixtures smoke/ que representan
+# el escenario (ver argos-contracts-scenarios/scenarios/ARGOS-CYB-01/).
+id: argos-cyb-01
+mode: golden
+checks:
+  - evaluator: evaluators.detection
+    contract: security-event
+    category: smoke
+    metric_name: detection_f1
+    extra:
+      # Duplica ../../ground-truth/manifests/argos-cyb-01.yaml a propósito:
+      # el runner no resuelve todavía referencias a ground-truth/ dentro de
+      # `extra` (harness/runner/cli.py solo pasa valores literales). Si
+      # cambias uno, cambia el otro — automatizar esa resolución es una
+      # mejora pendiente, no algo ya cableado.
+      expected_event_ids: ["evt-smoke-001"]
+  - evaluator: evaluators.triage
+    contract: incident
+    category: smoke
+    metric_name: triage_severity_consistency
+  - evaluator: evaluators.hallucination
+    contract: vulnerability-finding
+    category: smoke
+    metric_name: ungrounded_cve_rate
+  - evaluator: evaluators.tool_calls
+    contract: policy-decision
+    category: smoke
+    metric_name: tool_correctness
+    extra:
+      target_allowlist: ["deployment/gseg-simulado"] # ver evaluators/tool_calls/__init__.py
+  - evaluator: evaluators.traceability
+    contract: soc-handover
+    category: smoke
+    metric_name: trace_completeness

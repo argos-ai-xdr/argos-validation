@@ -1,0 +1,19 @@
+# Integración cruzada de contratos (ARG-023), sin atarse a los IDs
+# específicos del escenario ARGOS-CYB-01 — solo comprueba que las relaciones
+# entre contratos (incident -> evidence_refs, vulnerability -> source_ref)
+# son coherentes en cualquier fixture smoke/.
+id: integration
+mode: golden
+checks:
+  - evaluator: evaluators.traceability
+    contract: incident
+    category: smoke
+    metric_name: trace_completeness
+  - evaluator: evaluators.traceability
+    contract: evidence-manifest
+    category: smoke
+    metric_name: trace_completeness
+  - evaluator: evaluators.hallucination
+    contract: vulnerability-finding
+    category: smoke
+    metric_name: ungrounded_cve_rate
