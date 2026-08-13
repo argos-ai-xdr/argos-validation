@@ -36,6 +36,28 @@ def test_detection_no_expected_ids_means_everything_is_false_positive():
     assert metric.value == 0.0
 
 
+def test_detection_reports_expected_event_missing_from_fixtures():
+    """Regresión (AC06: 'eventos críticos perdidos = 0'): un event_id que el
+    ground truth exige y que NUNCA aparece entre los fixtures cargados es un
+    falso negativo real y debe listarse en el detalle del metric — antes,
+    el campo (entonces llamado missed_critical) solo miraba fixtures
+    detectados y por tanto nunca podía reportar un evento genuinamente
+    perdido, sin importar cuántos se perdieran de verdad."""
+    fixtures = [{"event_id": "e1", "severity_normalized": "low"}]
+    metric = detection.evaluate(fixtures, expected_event_ids=["e1", "e2-nunca-detectado"])
+    assert "e2-nunca-detectado" in metric.detail
+
+
+def test_detection_does_not_report_extraneous_detections_as_missed():
+    """Un event_id detectado (está en fixtures) que no está en expected es
+    un falso positivo, no un evento perdido — no debe aparecer en
+    missed_event_ids."""
+    fixtures = [{"event_id": "e1", "severity_normalized": "critical"}]
+    metric = detection.evaluate(fixtures, expected_event_ids=["e2"])
+    assert "missed_event_ids=['e2']" in metric.detail
+    assert "e1" not in metric.detail.split("missed_event_ids=")[1]
+
+
 def test_tool_calls_denies_out_of_allowlist():
     fixtures = [{"target": "namespace/prod", "action": "execute", "result": "DENY", "decision_id": "d1"}]
     metric = tool_calls.evaluate(fixtures, target_allowlist=["namespace/lab"])
