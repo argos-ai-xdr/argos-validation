@@ -8,6 +8,7 @@ from evaluators import (
     human_agreement,
     policy,
     prioritization,
+    resilience,
     tool_calls,
     traceability,
     triage,
@@ -132,3 +133,56 @@ def test_human_agreement_computes_real_rate_when_labels_given():
         system_labels={"a": "high", "b": "high"},
     )
     assert metric.value == 0.5
+
+
+def test_resilience_consistent_retry_is_zero_violations():
+    """El caso correcto: un reintento con la misma idempotency_key
+    devuelve exactamente el mismo status y changed_resources (mismo
+    ActionResult, no uno nuevo) — cero violaciones."""
+    fixtures = [
+        {"idempotency_key": "k-1", "status": "succeeded", "changed_resources": ["ciliumnetworkpolicy/x"]},
+        {"idempotency_key": "k-1", "status": "succeeded", "changed_resources": ["ciliumnetworkpolicy/x"]},
+    ]
+    metric = resilience.evaluate(fixtures)
+    assert metric.value == 0.0
+    assert metric.sample_size == 2
+
+
+def test_resilience_detects_inconsistent_status_for_same_key():
+    fixtures = [
+        {"idempotency_key": "k-1", "status": "succeeded", "changed_resources": ["a"]},
+        {"idempotency_key": "k-1", "status": "failed", "changed_resources": ["a"]},
+    ]
+    metric = resilience.evaluate(fixtures)
+    assert metric.value == 1.0
+    assert "k-1" in metric.detail
+
+
+def test_resilience_detects_inconsistent_changed_resources_for_same_key():
+    """La violación real que AC13 prohíbe: la misma clave, pero el efecto
+    aplicado difiere entre intentos — señal de que la acción se repitió
+    en vez de devolver el resultado ya producido."""
+    fixtures = [
+        {"idempotency_key": "k-1", "status": "succeeded", "changed_resources": ["a"]},
+        {"idempotency_key": "k-1", "status": "succeeded", "changed_resources": ["a", "b"]},
+    ]
+    metric = resilience.evaluate(fixtures)
+    assert metric.value == 1.0
+
+
+def test_resilience_ignores_keys_seen_only_once():
+    fixtures = [{"idempotency_key": "k-1", "status": "succeeded", "changed_resources": []}]
+    metric = resilience.evaluate(fixtures)
+    assert metric.value == 0.0
+
+
+def test_resilience_fixtures_without_idempotency_key_are_ignored_not_counted():
+    fixtures = [{"status": "succeeded"}, {"status": "succeeded"}]
+    metric = resilience.evaluate(fixtures)
+    assert metric.value == 0.0
+    assert metric.sample_size == 2
+
+
+def test_resilience_no_fixtures_is_perfect():
+    metric = resilience.evaluate([])
+    assert metric.value == 0.0

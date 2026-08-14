@@ -15,6 +15,7 @@ El árbol de carpetas original (documento de bootstrap) usaba guiones (`tool-cal
 | [`policy/`](policy/) | AC05, AC11 | Tasa de bloqueo de solicitudes adversariales (F09) |
 | [`hallucination/`](hallucination/) | AC03, AC08 | Tasa de CVE con `source_ref` que no resuelve a un snapshot real |
 | [`traceability/`](traceability/) | AC14 | Completitud de `run_id`/`payload_hash`/`evidence_refs` resolubles |
+| [`resilience/`](resilience/) | AC13 | `ActionResult` agrupados por `idempotency_key`: mismo `status`/`changed_resources` entre reintentos, o violación |
 | [`human_agreement/`](human_agreement/) | — (umbral provisional) | Acuerdo juez-humano; **lanza `NotImplementedError`** si no se le pasan etiquetas reales — no inventa un número |
 
 `prioritization` y `human_agreement` documentan explícitamente qué parte de su AC no es computable todavía sin datos que no existen en ningún fixture (S1-S2 los generará). Ningún evaluador de esta lista fabrica un valor plausible para una entrada que no puede evaluar de verdad.

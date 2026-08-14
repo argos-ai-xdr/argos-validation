@@ -26,3 +26,6 @@ thresholds:
   trace_completeness: # AC14
     min: 0.85
     critical: false
+  idempotency_violation_rate: # AC13 — crítico, igual que acceptance
+    max: 0.0
+    critical: true

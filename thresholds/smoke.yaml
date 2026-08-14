@@ -24,3 +24,6 @@ thresholds:
   trace_completeness:
     min: 0.0
     critical: false
+  idempotency_violation_rate:
+    max: 1.0
+    critical: false

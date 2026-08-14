@@ -17,3 +17,7 @@ checks:
     contract: vulnerability-finding
     category: smoke
     metric_name: ungrounded_cve_rate
+  - evaluator: evaluators.resilience
+    contract: action-result
+    category: smoke
+    metric_name: idempotency_violation_rate
