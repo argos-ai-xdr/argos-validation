@@ -279,27 +279,38 @@ entries:
 
   - uc_id: G7
     sprint: S8
-    objective: "Acceptance Gate: AC01-AC14, DRR, as-built, runbooks, evidence pack y PI3"
+    objective: "Acceptance Gate: AC01-AC14, ARR, as-built, runbooks, evidence pack y PI3"
     story_ids: [ARG-027, ARG-028]
     contract_ids: [evidence-manifest.v1, soc-handover.v1]
     test_ids:
       - argos-validation/tests/test_evidence_manifest.py
       - argos-validation/tests/test_report_schema.py
       - argos-validation/tests/test_run_summary.py
-      - argos-validation/harness/runner/cli.py
+      - argos-validation/tests/test_acceptance.py
+      - argos-validation/harness/acceptance.py
     metric_ids:
       - trace_completeness  # AC14
     evidence_refs:
       - argos-control/project/acceptance/acceptance-criteria.yaml
+      - argos-validation/harness/acceptance.py
     gate_id: G7
     status: BLOCKED
     notes: >
-      harness/runner/cli.py ejecuta UNA suite a la vez (c06/c07/c08/
-      adversarial/integration/regression) y produce run_summary.json +
-      evidence manifest reales, pero no existe todavía un orquestador que
-      ejecute las 14 AC01-AC14 como un solo release candidate y produzca un
-      DRR. No existe as-built, runbooks rellenados (solo
+      ARG-027 ("Acceptance runner AC01-AC14, ARR/G7...", redacción
+      corregida en backlog.yaml para coincidir con el documento vigente)
+      ya tiene su pieza de código real: harness/acceptance.py corre las 7
+      suites registradas contra thresholds/acceptance.yaml, agrega por AC
+      (peor gate entre suites que contribuyen), EXIGE cobertura completa
+      de los 14 AC (así se descubrieron y cerraron los gaps de
+      AC01/AC02/AC10/AC12 — ver G2/G5 arriba) y sella el resultado con
+      sha256 (hash-seal, no firma criptográfica con clave real — no
+      existe PKI todavía, documentado explícitamente como tal). Corrido
+      hoy: cobertura completa de los 14 AC, pero overall=FAIL real
+      (AC03/AC08 fallan contra el umbral de aceptación porque solo hay
+      datos smoke-tier, no acceptance-tier calibrados) — el runner
+      reporta eso tal cual, no lo suaviza. Sigue faltando: as-built,
+      runbooks rellenados (solo
       argos-control/templates/runbook/runbook-template.md, una plantilla
-      vacía) ni un evidence pack firmado end-to-end. Depende de G6, que
+      vacía) y el evidence pack end-to-end de ARG-028. Depende de G6, que
       también está PARTIAL — G7 se queda correctamente BLOCKED, no se
       fuerza un PASS prematuro.

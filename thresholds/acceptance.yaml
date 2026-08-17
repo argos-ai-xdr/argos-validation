@@ -40,3 +40,6 @@ thresholds:
   rollback_success_rate: # AC12
     min: 1.0
     critical: true
+  reproducibility_violation: # AC01
+    max: 0.0
+    critical: true
