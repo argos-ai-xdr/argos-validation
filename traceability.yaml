@@ -303,6 +303,7 @@ entries:
       - argos-cyber-tools/docs/cyber-range-package.md
       - argos-core/docs/operations-package.md
       - argos-control/releases/0.1.0-dev/release-restore-package.md
+      - argos-control/governance/arg-028-governance-package.md
     gate_id: G7
     status: BLOCKED
     notes: >
@@ -388,10 +389,19 @@ entries:
       solo argos-platform la referencia y está comentada explícitamente
       hasta que exista un Dockerfile (ARG-002), y no hay ninguno en
       ningún repo. Backup/restore sigue BLOCKED (DEP-02), no por falta
-      de escribir el script. Quedan 2 de los 8 paquetes de ARG-028:
-      Gobierno (exige infraestructura real de gates/CI que ya funciona
-      parcialmente, pendiente de consolidar) y Formación (exige
-      participación humana real — sesiones de formación, no código) — y
-      runbooks para el resto del tool_catalog. Depende de G6, que
-      también está PARTIAL — G7 se queda correctamente BLOCKED, no se
-      fuerza un PASS prematuro.
+      de escribir el script. El paquete "Gobierno" (7 de 8) también está
+      escrito: argos-control/governance/arg-028-governance-package.md —
+      gates/riesgos/waivers/licencias ya reales y bien diseñados
+      (risk-register.yaml con 10 DEP, exception.yaml con caducidad
+      obligatoria), pero 3 hallazgos concretos impiden el sign-off: (1)
+      0 issues filed en argos-control (verificado vía API de GitHub,
+      ningún defecto/riesgo/excepción registrado nunca por el proceso
+      real), (2) CODEOWNERS con roles genéricos sin mapear a cuentas
+      GitHub reales, (3) risk-register.yaml desalineado del avance real
+      — sus fechas de sprint (S1 empieza 01-sep-2026, futuro) dan la
+      impresión de que nada ha empezado cuando ya hay código probado de
+      S1 a S8. Solo queda 1 de los 8 paquetes de ARG-028: Formación
+      (exige participación humana real — sesiones de formación, no
+      código, correctamente no construible) — y runbooks para el resto
+      del tool_catalog. Depende de G6, que también está PARTIAL — G7 se
+      queda correctamente BLOCKED, no se fuerza un PASS prematuro.
