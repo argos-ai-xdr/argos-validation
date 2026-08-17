@@ -1,0 +1,127 @@
+# Policy-to-Test (prompt maestro de arquitectura objetivo §43; ADR-017,
+# Fase C).
+#
+# Mapea cada REGLA de decisión real y aplicada hoy a el/los test(s) que la
+# ejercitan de verdad -- no una lista aspiracional, cada `tests` referencia
+# un test real que existe y pasa (verificado por lectura directa del
+# archivo citado, no supuesto).
+#
+# Alcance: las tres únicas superficies de decisión con reglas discretas
+# y probadas hoy. NO incluye el `.rego` canónico
+# (argos-cyber-tools/policies/opa/*.rego) -- ver nota al final: no tiene
+# tests propios y no se ejecuta en runtime (OPAClient lanza
+# NotImplementedError, ARG-020). Ocultarlo sería falsear cobertura;
+# se documenta como hueco real, no como regla cubierta.
+
+schema_version: 1
+
+rule_groups:
+  - id: pdp-f07
+    name: "PolicyDecisionPoint (F07): dry-run/execute/target allowlist"
+    source: "argos-core/services/policy_adapter/__init__.py::InMemoryPolicyDecisionPoint.evaluate"
+    note: >
+      Reimplementación Python de la regla F07 del documento maestro
+      (5.3), la MISMA que describe el .rego de referencia en
+      argos-contracts-scenarios/scenarios/ARGOS-CYB-01/policies/ -- pero
+      es esta versión Python, no el .rego, la que se ejecuta de verdad
+      en cada test/suite de argos-core.
+    rules:
+      - id: F07-R1
+        description: "target fuera de la allowlist -> DENY, sin importar la acción"
+        tests:
+          - "argos-core/tests/unit/test_policy_adapter.py::test_target_outside_allowlist_is_denied_regardless_of_action"
+      - id: F07-R2
+        description: "action=execute, target en allowlist -> APPROVAL_REQUIRED"
+        tests:
+          - "argos-core/tests/unit/test_policy_adapter.py::test_execute_in_allowlist_requires_approval"
+      - id: F07-R3
+        description: "action=dry-run, target en allowlist -> ALLOW_DRY_RUN"
+        tests:
+          - "argos-core/tests/unit/test_policy_adapter.py::test_dry_run_in_allowlist_is_allowed"
+      - id: F07-R4
+        description: "acción desconocida (ni execute ni dry-run) -> DENY"
+        tests:
+          - "argos-core/tests/unit/test_policy_adapter.py::test_unknown_action_is_denied"
+
+  - id: approval-store
+    name: "ApprovalStore.validate_and_consume: anti-replay y segregación de funciones"
+    source: "argos-cyber-tools/policies/approval/__init__.py::ApprovalStore.validate_and_consume"
+    rules:
+      - id: APR-R1
+        description: "approval_id ya consumida -> ApprovalRejected (anti-replay)"
+        tests:
+          - "argos-cyber-tools/tests/anti-replay/test_approval_anti_replay.py::test_replayed_approval_is_rejected"
+      - id: APR-R2
+        description: "approver_id == requester_id -> ApprovalRejected (segregación de funciones)"
+        tests:
+          - "argos-cyber-tools/tests/anti-replay/test_approval_anti_replay.py::test_self_approval_by_requester_is_rejected"
+      - id: APR-R3
+        description: "approver_id == executor_id -> ApprovalRejected (segregación de funciones)"
+        tests:
+          - "argos-cyber-tools/tests/anti-replay/test_approval_anti_replay.py::test_self_approval_by_executor_is_rejected"
+      - id: APR-R4
+        description: "decision != APPROVE -> ApprovalRejected"
+        tests:
+          - "argos-cyber-tools/tests/anti-replay/test_approval_anti_replay.py::test_rejected_decision_is_never_accepted"
+      - id: APR-R5
+        description: "now > expires_at -> ApprovalRejected (TTL)"
+        tests:
+          - "argos-cyber-tools/tests/anti-replay/test_approval_anti_replay.py::test_expired_approval_is_rejected"
+      - id: APR-R6
+        description: "signature_ref no coincide con plan_hash actual -> ApprovalRejected (plan alterado tras aprobar)"
+        tests:
+          - "argos-cyber-tools/tests/anti-replay/test_approval_anti_replay.py::test_tampered_plan_hash_is_rejected"
+      - id: APR-R7
+        description: "aprobación válida se acepta y se marca consumida (camino feliz + no interferencia entre distintas approval_id)"
+        tests:
+          - "argos-cyber-tools/tests/anti-replay/test_approval_anti_replay.py::test_valid_approval_is_accepted_once"
+          - "argos-cyber-tools/tests/anti-replay/test_approval_anti_replay.py::test_different_approval_ids_do_not_interfere"
+
+  - id: mcp-gateway
+    name: "Gateway.authorize: único punto de entrada MCP"
+    source: "argos-cyber-tools/mcp_gateway/__init__.py::Gateway.authorize"
+    rules:
+      - id: GW-R1
+        description: "tool_name desconocido -> ToolNotFound"
+        tests:
+          - "argos-cyber-tools/tests/authorization/test_gateway.py::test_unknown_tool_raises"
+      - id: GW-R2
+        description: "action no soportada por el tool (según tool.mode) -> denegado"
+        tests:
+          - "argos-cyber-tools/tests/authorization/test_gateway.py::test_unsupported_action_for_tool_is_denied"
+      - id: GW-R3
+        description: "scope requerido no concedido al llamante -> denegado"
+        tests:
+          - "argos-cyber-tools/tests/authorization/test_gateway.py::test_missing_scope_is_denied"
+      - id: GW-R4
+        description: "target fuera de la allowlist del tool -> denegado"
+        tests:
+          - "argos-cyber-tools/tests/authorization/test_gateway.py::test_target_outside_allowlist_is_denied"
+      - id: GW-R5
+        description: "execute sin Approval adjunta -> denegado"
+        tests:
+          - "argos-cyber-tools/tests/authorization/test_gateway.py::test_execute_without_approval_is_denied"
+      - id: GW-R6
+        description: "execute con Approval válida (delega en ApprovalStore, ver approval-store) -> autorizado"
+        tests:
+          - "argos-cyber-tools/tests/authorization/test_gateway.py::test_execute_with_valid_approval_is_allowed"
+      - id: GW-R7
+        description: "la credencial descendente nunca es el token del llamante (anti token-passthrough), incluso en carga repetida"
+        tests:
+          - "argos-cyber-tools/tests/authorization/test_gateway.py::test_downstream_credential_is_never_the_caller_token_across_many_calls"
+      - id: GW-R8
+        description: "sin target_allowlists explícito, Gateway() carga la allowlist real de policies/target-allowlists/*.yaml (no cae a {} = denegar todo)"
+        tests:
+          - "argos-cyber-tools/tests/authorization/test_gateway.py::test_gateway_without_explicit_allowlist_loads_the_real_one_from_disk"
+
+not_covered:
+  - component: "argos-cyber-tools/policies/opa/*.rego (isolate_kubernetes_workload, scale_to_zero, increase_monitoring)"
+    reason: >
+      Política canónica de referencia (documento maestro 5.3). No tiene
+      tests .rego propios (`opa test`, inexistente en este repo) y no se
+      ejecuta en runtime hoy: OPAClient.evaluate lanza NotImplementedError
+      explícitamente (ARG-020). Las reglas equivalentes SÍ probadas y
+      ejecutadas son pdp-f07 (reimplementación Python, mismo resultado
+      para isolate_kubernetes_workload). scale_to_zero/increase_monitoring
+      no tienen reimplementación Python equivalente todavía -- hueco real,
+      no solo de test.

@@ -11,6 +11,8 @@
 | [`checkpoints.py`](checkpoints.py) | ARG-023: valida un directorio de run contra `argos-contracts-scenarios/scenarios/ARGOS-CYB-01/checkpoints/checkpoints.yaml` — evidencia CP00-CP13 presente, schema real donde hay contrato v1, y un único `run_id` coherente en todos los checkpoints (trazabilidad end-to-end) |
 | [`reproducibility.py`](reproducibility.py) | AC01: corre la misma suite dos veces sobre el mismo checkout y compara `value`/`gate`/`sample_size` métrica por métrica (ignora `generated_at`, que se espera que difiera) |
 | [`acceptance.py`](acceptance.py) | ARG-027: acceptance runner AC01-AC14 — corre todas las suites contra `thresholds/acceptance.yaml`, agrega por AC (peor gate entre suites), exige cobertura de los 14 y sella el reporte con sha256 |
+| [`replay_capsule.py`](replay_capsule.py) | ReplayCapsule (prompt maestro §42, ADR-017 Fase C): empaqueta un run_dir ya capturado en un manifiesto con sha256 por archivo; `replay()` reutiliza `checkpoints.validate_run` y además detecta manipulación de contenido posterior a la captura |
+| [`policy_to_test.py`](policy_to_test.py) | Policy-to-Test (prompt maestro §43, ADR-017 Fase C): valida `../traceability/policy-to-test.yaml` — cada regla de PDP/ApprovalStore/Gateway real referencia un test que existe de verdad en disco |
 
 Ejecución: `python -m harness.runner.cli --suite suites/c06/suite.yaml --thresholds thresholds/smoke.yaml`.
 
@@ -37,3 +39,14 @@ escribe `acceptance_report.json` (por AC01-AC14) + `acceptance_seal.json`
 firma criptográfica con clave real, no existe PKI todavía) y sale con
 código 1 si algún AC queda sin cobertura o el resultado global no es
 PASS/PASS_WITH_EXPECTED_BLOCKS.
+
+ReplayCapsule: `python -m harness.replay_capsule build --run-dir <dir> --checkpoints
+<checkpoints.yaml> --capsule-id <id> --out capsule.json` construye la cápsula;
+`python -m harness.replay_capsule replay --capsule capsule.json --run-dir <dir>`
+re-valida contra checkpoints Y contra el hash capturado — reproducción
+determinista de un run ya existente, no re-ejecución del pipeline real
+(eso sería un Digital Twin, que no existe).
+
+Policy-to-Test: `python -m harness.policy_to_test` valida
+`../traceability/policy-to-test.yaml` contra el estado real de los repos
+hermanos (mismo patrón que `traceability.py`).
