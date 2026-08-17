@@ -122,9 +122,22 @@ def run_acceptance(
     for suite_id in suite_ids:
         suite_path = suites_root / suite_id / "suite.yaml"
         metric = evaluate_reproducibility(suite_path, thresholds_path, contracts_path=contracts_path)
+        # Default critical=True incluso si thresholds.yaml no declara
+        # reproducibility_violation: AC01 es el único AC marcado "PASS
+        # obligatorio" sin matiz en el documento maestro — no hay una
+        # lectura válida de "no crítico" para él, a diferencia del resto
+        # de métricas donde el threshold decide.
         rule = thresholds.get("reproducibility_violation", {"max": 0.0, "critical": True})
         gate = "FAIL" if metric.value > rule.get("max", 0.0) else "PASS"
-        repro_contributions.append({"suite": suite_id, "metric_name": "reproducibility_violation", "value": metric.value, "gate": gate, "critical": True})
+        repro_contributions.append(
+            {
+                "suite": suite_id,
+                "metric_name": "reproducibility_violation",
+                "value": metric.value,
+                "gate": gate,
+                "critical": bool(rule.get("critical", True)),
+            }
+        )
     contributions["AC01"] = repro_contributions
 
     ac_results: dict[str, ACResult] = {}

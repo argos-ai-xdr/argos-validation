@@ -52,6 +52,31 @@ def test_missing_ac_coverage_forces_overall_fail(contracts_path):
     assert not report.ok
 
 
+def test_a_real_reproducibility_violation_fails_ac01_within_the_acceptance_run(monkeypatch, contracts_path):
+    """Integración end-to-end de AC01 dentro del acceptance runner (no
+    solo evaluate_reproducibility en aislamiento, ver test_reproducibility.py):
+    si una suite deja de ser determinista, el report debe marcar AC01
+    como FAIL y arrastrar overall a FAIL, no quedarse solo en el nivel de
+    harness.reproducibility sin propagarse."""
+    from evaluators.base import Metric
+
+    def fake_evaluate_reproducibility(suite_path, thresholds_path, *, contracts_path=None):
+        return Metric(name="reproducibility_violation", value=1.0, detail="no determinista (simulado)", ac_ids=("AC01",), sample_size=1)
+
+    monkeypatch.setattr("harness.acceptance.evaluate_reproducibility", fake_evaluate_reproducibility)
+
+    report = run_acceptance(
+        suites_root=ROOT / "suites",
+        thresholds_path=ROOT / "thresholds" / "acceptance.yaml",
+        contracts_path=contracts_path,
+        suite_ids=("c06",),
+    )
+
+    assert report.ac_results["AC01"].gate == "FAIL"
+    assert report.ac_results["AC01"].critical is True
+    assert report.overall == "FAIL"
+
+
 def test_seal_changes_if_report_content_changes():
     report_a = {"overall": "PASS", "ac_results": {}}
     report_b = {"overall": "FAIL", "ac_results": {}}
