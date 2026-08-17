@@ -14,3 +14,7 @@ checks:
     contract: asset-snapshot
     category: smoke
     metric_name: trace_completeness
+  - evaluator: evaluators.drift
+    contract: asset-snapshot
+    category: smoke
+    metric_name: critical_drift_missed_rate

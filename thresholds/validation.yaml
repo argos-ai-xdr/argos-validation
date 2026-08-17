@@ -29,3 +29,6 @@ thresholds:
   idempotency_violation_rate: # AC13 — crítico, igual que acceptance
     max: 0.0
     critical: true
+  critical_drift_missed_rate: # ARG-010 — crítico, igual que acceptance
+    max: 0.0
+    critical: true

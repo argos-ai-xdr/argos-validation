@@ -27,3 +27,6 @@ thresholds:
   idempotency_violation_rate:
     max: 1.0
     critical: false
+  critical_drift_missed_rate:
+    max: 1.0
+    critical: false

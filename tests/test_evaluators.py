@@ -4,6 +4,7 @@ import pytest
 
 from evaluators import (
     detection,
+    drift,
     hallucination,
     human_agreement,
     policy,
@@ -185,4 +186,55 @@ def test_resilience_fixtures_without_idempotency_key_are_ignored_not_counted():
 
 def test_resilience_no_fixtures_is_perfect():
     metric = resilience.evaluate([])
+    assert metric.value == 0.0
+
+
+def _asset(asset_id, observed_at, **overrides):
+    base = {"asset_id": asset_id, "observed_at": observed_at, "criticality_esp": "medium", "node": "node-1"}
+    base.update(overrides)
+    return base
+
+
+def test_drift_no_change_between_snapshots_is_zero():
+    fixtures = [_asset("a1", "2026-08-01T00:00:00Z"), _asset("a1", "2026-08-02T00:00:00Z")]
+    metric = drift.evaluate(fixtures)
+    assert metric.value == 0.0
+    assert "drift total detectado: 0" in metric.detail
+
+
+def test_drift_on_confirmed_critical_asset_is_correctly_captured_not_missed():
+    """El caso correcto: drift real sobre un activo CONFIRMADO crítico
+    (criticality_esp presente en ambos snapshots) está correctamente
+    capturado por detect_drift — no cuenta como 'omitido'."""
+    fixtures = [
+        _asset("a1", "2026-08-01T00:00:00Z", criticality_esp="critical", node="node-1"),
+        _asset("a1", "2026-08-02T00:00:00Z", criticality_esp="critical", node="node-2"),
+    ]
+    metric = drift.evaluate(fixtures)
+    assert metric.value == 0.0
+    assert "drift total detectado: 1" in metric.detail
+
+
+def test_drift_with_unresolvable_criticality_is_flagged_as_potentially_missed():
+    """El riesgo real: drift detectado pero criticality_esp ausente en un
+    snapshot — no se puede afirmar que NO era crítico, así que se cuenta
+    como potencialmente omitido en vez de asumir 'no crítico' en silencio."""
+    fixtures = [
+        _asset("a1", "2026-08-01T00:00:00Z", criticality_esp=None, node="node-1"),
+        _asset("a1", "2026-08-02T00:00:00Z", criticality_esp="medium", node="node-2"),
+    ]
+    metric = drift.evaluate(fixtures)
+    assert metric.value == 1.0
+    assert "a1" in metric.detail
+
+
+def test_drift_single_snapshot_per_asset_is_not_comparable():
+    fixtures = [_asset("a1", "2026-08-01T00:00:00Z")]
+    metric = drift.evaluate(fixtures)
+    assert metric.value == 0.0
+    assert "0/0" in metric.detail
+
+
+def test_drift_no_fixtures_is_perfect():
+    metric = drift.evaluate([])
     assert metric.value == 0.0
