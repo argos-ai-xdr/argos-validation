@@ -301,6 +301,7 @@ entries:
       - argos-smartops/docs/soc-handover-package.md
       - argos-smartops/api/handover.py
       - argos-cyber-tools/docs/cyber-range-package.md
+      - argos-core/docs/operations-package.md
     gate_id: G7
     status: BLOCKED
     notes: >
@@ -365,9 +366,20 @@ entries:
       del propio rango (argos-platform/cyber-range/targets/allowlist.yaml,
       que sigue siendo plantilla con "TODO" literales en
       approved_repositories/sinkhole_endpoints/targets). El rango no
-      puede declararse listo mientras esa segunda capa no se rellene.
-      Siguen faltando 4 de los 8 paquetes de ARG-028 (Release/restore,
-      Operación XDR, Gobierno, Formación — todos exigen infraestructura
-      real o participación humana que no existe) y runbooks para el
-      resto del tool_catalog. Depende de G6, que también está PARTIAL —
-      G7 se queda correctamente BLOCKED, no se fuerza un PASS prematuro.
+      puede declararse listo mientras esa segunda capa no se rellene. El
+      paquete "Operación XDR" (5 de 8) también está escrito:
+      argos-core/docs/operations-package.md — perfil mucho más mixto que
+      los anteriores: ingesta/correlación/triaje reales y probados; CTI
+      MISP es solo un Protocol (`NotConfiguredMISPSource` lanza
+      `NotImplementedError`, pendiente ARG-016, sin snapshots reales);
+      colas es `InMemoryEventBus`, el cliente NATS real pendiente de
+      ARG-015; retención tiene el schema/hash reales pero no la
+      escritura física (pendiente ARG-026); dashboards mínimos y salud
+      NO existen ni como interfaz (verificado en argos-core y
+      argos-smartops). Documentado sin difuminar la diferencia entre
+      "interfaz sin implementar" y "ni siquiera hay interfaz". Siguen
+      faltando 3 de los 8 paquetes de ARG-028 (Release/restore, Gobierno,
+      Formación — todos exigen infraestructura real o participación
+      humana que no existe) y runbooks para el resto del tool_catalog.
+      Depende de G6, que también está PARTIAL — G7 se queda
+      correctamente BLOCKED, no se fuerza un PASS prematuro.
