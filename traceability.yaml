@@ -295,6 +295,9 @@ entries:
       - argos-validation/harness/acceptance.py
       - argos-cyber-tools/runbooks/isolate_kubernetes_workload.md
       - argos-cyber-tools/runbooks/scale_to_zero.md
+      - argos-cyber-tools/runbooks/read_asset_inventory.md
+      - argos-cyber-tools/runbooks/read_vulnerability_findings.md
+      - argos-cyber-tools/tests/mcp_servers/test_read_servers.py
       - argos-control/releases/0.1.0-dev/as-built.md
       - argos-control/releases/0.1.0-dev/release-manifest.yaml
       - argos-smartops/docs/operator-package.md
@@ -402,6 +405,18 @@ entries:
       impresión de que nada ha empezado cuando ya hay código probado de
       S1 a S8. Solo queda 1 de los 8 paquetes de ARG-028: Formación
       (exige participación humana real — sesiones de formación, no
-      código, correctamente no construible) — y runbooks para el resto
-      del tool_catalog. Depende de G6, que también está PARTIAL — G7 se
-      queda correctamente BLOCKED, no se fuerza un PASS prematuro.
+      código, correctamente no construible). Runbooks del tool_catalog:
+      4 de 5 completos (isolate_kubernetes_workload, scale_to_zero,
+      read_asset_inventory, read_vulnerability_findings — estos dos
+      últimos adaptan la plantilla para herramientas read-only sin
+      Approval/rollback, y expusieron un gap real cerrado en la misma
+      sesión: InMemoryAssetServer/InMemoryVulnerabilityServer tenían
+      código real sin ningún test directo, ver
+      tests/mcp_servers/test_read_servers.py). Falta solo
+      `increase_monitoring`, deliberadamente diferido: formalizarlo
+      exige decidir antes si su bypass de aprobación (GATE_BYPASSED, ya
+      probado) se mantiene o se revisa — decisión de política de
+      seguridad real, no algo que corresponda resolver unilateralmente
+      al escribir una plantilla. Depende de G6, que también está
+      PARTIAL — G7 se queda correctamente BLOCKED, no se fuerza un PASS
+      prematuro.
