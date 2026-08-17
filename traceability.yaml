@@ -295,6 +295,8 @@ entries:
       - argos-validation/harness/acceptance.py
       - argos-cyber-tools/runbooks/isolate_kubernetes_workload.md
       - argos-cyber-tools/runbooks/scale_to_zero.md
+      - argos-control/releases/0.1.0-dev/as-built.md
+      - argos-control/releases/0.1.0-dev/release-manifest.yaml
     gate_id: G7
     status: BLOCKED
     notes: >
@@ -320,8 +322,19 @@ entries:
       isolate_kubernetes_workload, también
       fixtures/smoke/action-result/action-result-002-rollback.json).
       Ambos runbooks dejan explícito que ninguna simulación fue contra un
-      cluster real (mismo bloqueo que ENV-QUAL-01). Sigue faltando: el
-      as-built del sistema completo, runbooks para el resto del
-      tool_catalog, y el evidence pack end-to-end. Depende de G6, que
-      también está PARTIAL — G7 se queda correctamente BLOCKED, no se
-      fuerza un PASS prematuro.
+      cluster real (mismo bloqueo que ENV-QUAL-01). El paquete "As-built"
+      de ARG-028 (1 de 8 que exige el documento, §16.7) ya está escrito:
+      argos-control/releases/0.1.0-dev/as-built.md — topología real (CI
+      3/7 verde, 4/7 con el mismo bloqueo "workflow was not found" que G0,
+      reverificado contra la API de GitHub Actions), namespaces,
+      versiones (ninguna fijada todavía), ADR, interfaces, data flows
+      (11/14 checkpoints), tabla completa de modos REAL/EMULADO por
+      componente, y 8 desviaciones conocidas sin ocultar ninguna.
+      release-manifest.yaml también se actualizó — solo tenía el
+      "Initial commit" de ARG-001 (S1), desincronizado del estado real
+      tras S2-S8. Siguen faltando los otros 7 paquetes de ARG-028
+      (Release/restore, Operación XDR, HITL/SOAR, Cyber-range, SOC
+      handover, Gobierno, Formación — todos exigen infraestructura real o
+      participación humana que no existe) y runbooks para el resto del
+      tool_catalog. Depende de G6, que también está PARTIAL — G7 se
+      queda correctamente BLOCKED, no se fuerza un PASS prematuro.
