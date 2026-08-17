@@ -293,6 +293,8 @@ entries:
     evidence_refs:
       - argos-control/project/acceptance/acceptance-criteria.yaml
       - argos-validation/harness/acceptance.py
+      - argos-cyber-tools/runbooks/isolate_kubernetes_workload.md
+      - argos-cyber-tools/runbooks/scale_to_zero.md
     gate_id: G7
     status: BLOCKED
     notes: >
@@ -308,9 +310,18 @@ entries:
       hoy: cobertura completa de los 14 AC, pero overall=FAIL real
       (AC03/AC08 fallan contra el umbral de aceptación porque solo hay
       datos smoke-tier, no acceptance-tier calibrados) — el runner
-      reporta eso tal cual, no lo suaviza. Sigue faltando: as-built,
-      runbooks rellenados (solo
-      argos-control/templates/runbook/runbook-template.md, una plantilla
-      vacía) y el evidence pack end-to-end de ARG-028. Depende de G6, que
+      reporta eso tal cual, no lo suaviza. ARG-028 (as-built, runbooks,
+      evidence pack) empieza a tener piezas reales: 2 runbooks rellenados
+      con hechos verificables, no plantilla vacía —
+      argos-cyber-tools/runbooks/{isolate_kubernetes_workload,scale_to_zero}.md,
+      con "Aprobado por" honestamente PENDIENTE (sin sign-off real de
+      SOC/Cyber todavía) y su historial de simulación citando evidencia
+      real (tests/rollback/test_rollback_cycle.py y, para
+      isolate_kubernetes_workload, también
+      fixtures/smoke/action-result/action-result-002-rollback.json).
+      Ambos runbooks dejan explícito que ninguna simulación fue contra un
+      cluster real (mismo bloqueo que ENV-QUAL-01). Sigue faltando: el
+      as-built del sistema completo, runbooks para el resto del
+      tool_catalog, y el evidence pack end-to-end. Depende de G6, que
       también está PARTIAL — G7 se queda correctamente BLOCKED, no se
       fuerza un PASS prematuro.
