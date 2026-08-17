@@ -197,23 +197,29 @@ entries:
       - argos-cyber-tools/tests/adversarial/test_adversarial_fixtures_blocked.py
       - argos-validation/suites/adversarial/suite.yaml
       - argos-smartops/tests/e2e/test_full_flow.py
+      - argos-validation/tests/test_evidence_panel.py
     metric_ids:
       - adversarial_block_rate  # AC05 / AC11 (F09)
-    evidence_refs: []
+    evidence_refs:
+      - argos-validation/harness/reporters/evidence_panel.py
     gate_id: G6
     status: PARTIAL
     notes: >
       ARG-024 (F09 adversarial + regresión) construido y probado.
-      Gaps reales, no ocultos: ARG-023 (checkpoints CP00-CP13 como
-      artefacto integrado end-to-end) solo existe hoy como mención en
-      sprint-definitions/S7.md, sin implementación; ARG-025
-      (backup/restore de OpenSearch/Ceph RGW) no tiene NINGÚN script en
-      argos-platform (tests/recovery/README.md documenta la intención,
-      cero código); ARG-026 (evidence store/dashboards/paquete firmado,
-      P1 pero confirmado prioritario) tiene el evidence manifest
-      (harness/evidence/manifest.py) pero no el panel operativo —
-      ver tarea abierta "ARG-026: minimal evidence operational panel".
-      G6 no puede declararse PASS con estos tres gaps abiertos.
+      ARG-026 (evidence store/dashboards/paquete firmado, P1 pero
+      confirmado prioritario) ya tiene su slice P0 real: el evidence
+      manifest (harness/evidence/manifest.py) y ahora el panel operativo
+      mínimo (harness/reporters/evidence_panel.py — índice HTML offline
+      por run/CP/AC, estado, métricas, decisiones, hashes y enlaces a
+      artefactos, sin analítica avanzada; la reconstrucción offline del
+      evidence pack no depende de su disponibilidad, propuesta v0.6.25.4,
+      §15.16). Gaps reales que SIGUEN abiertos, no ocultos: ARG-023
+      (checkpoints CP00-CP13 como artefacto integrado end-to-end) solo
+      existe hoy como mención en sprint-definitions/S7.md, sin
+      implementación; ARG-025 (backup/restore de OpenSearch/Ceph RGW) no
+      tiene NINGÚN script en argos-platform (tests/recovery/README.md
+      documenta la intención, cero código). G6 no puede declararse PASS
+      con estos dos gaps abiertos.
 
   - uc_id: G7
     sprint: S8
