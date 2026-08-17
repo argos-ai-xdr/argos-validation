@@ -21,6 +21,8 @@ from harness.evidence.manifest import build_run_manifest, write_manifest
 from harness.loaders.contracts_path import resolve_contracts_path
 from harness.loaders.fixture_loader import build_registry, load_fixtures, validate_fixture
 from harness.reporters.run_summary import build_run_summary, write_run_summary
+from harness.traceability import load_traceability
+from harness.traceability import validate as validate_traceability
 
 
 @dataclasses.dataclass
@@ -98,7 +100,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--thresholds", required=True, type=pathlib.Path)
     parser.add_argument("--out", type=pathlib.Path, default=pathlib.Path("run_summary.json"))
     parser.add_argument("--manifest-out", type=pathlib.Path, default=pathlib.Path("evidence_manifest.json"))
+    parser.add_argument(
+        "--check-trace",
+        action="store_true",
+        help=(
+            "Valida traceability.yaml (TRACE-01) y bloquea el run si algún gate "
+            "P0 está en status=BLOCKED — 'la release candidata se bloquea si "
+            "traceability.yaml no valida' (propuesta v0.6.25.4, §4.6.1)."
+        ),
+    )
     args = parser.parse_args(argv)
+
+    if args.check_trace:
+        trace_path = pathlib.Path(__file__).resolve().parents[2] / "traceability.yaml"
+        trace_result = validate_traceability(load_traceability(trace_path))
+        for warning in trace_result.warnings:
+            print(f"TRACE AVISO: {warning}")
+        for error in trace_result.errors:
+            print(f"TRACE ERROR: {error}")
+        for blocked in trace_result.p0_blocked_gates:
+            print(f"TRACE P0 BLOCKED: {blocked}")
+        if not trace_result.ok:
+            print("traceability.yaml no valida: release candidate bloqueada, no se ejecuta la suite")
+            return 1
 
     summary, fixture_errors = run_suite(args.suite, args.thresholds)
 

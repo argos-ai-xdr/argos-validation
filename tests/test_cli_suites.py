@@ -4,7 +4,7 @@ import pathlib
 
 import pytest
 
-from harness.runner.cli import run_suite
+from harness.runner.cli import main, run_suite
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SUITE_IDS = ["c06", "c07", "c08", "argos-cyb-01", "integration", "regression", "adversarial"]
@@ -42,3 +42,26 @@ def test_c07_tool_correctness_passes_acceptance(contracts_path):
 
     assert fixture_errors == []
     assert summary["results"]["tool_correctness"]["gate"] == "PASS"
+
+
+def test_check_trace_blocks_the_run_on_the_known_real_p0_gap(monkeypatch, tmp_path, capsys):
+    """TRACE-01: 'la release candidata se bloquea si traceability.yaml no
+    valida'. G7 (ARG-027/ARG-028, ambas P0) está honestamente en
+    status=BLOCKED en el traceability.yaml real del repo (no existe
+    orquestador AC01-AC14 ni evidence pack firmado todavía) — --check-trace
+    debe frenar el run ANTES de tocar ninguna suite, no solo avisar."""
+    monkeypatch.chdir(tmp_path)
+    exit_code = main(
+        [
+            "--suite",
+            str(ROOT / "suites" / "c06" / "suite.yaml"),
+            "--thresholds",
+            str(ROOT / "thresholds" / "smoke.yaml"),
+            "--check-trace",
+        ]
+    )
+    assert exit_code == 1
+    out = capsys.readouterr().out
+    assert "TRACE P0 BLOCKED" in out
+    assert "release candidate bloqueada" in out
+    assert not (tmp_path / "run_summary.json").exists()

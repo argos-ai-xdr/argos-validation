@@ -1,0 +1,243 @@
+# TRACE-01 (propuesta v0.6.25.4, §4.6.1): trazabilidad machine-readable
+# UC/sprint -> story -> contrato -> test -> métrica -> evidencia -> gate.
+#
+# Mantenido A MANO, no autogenerado — no existe todavía un catálogo formal
+# de UC (C-06.UC1, C-08.UC5, ...) como artefacto de repositorio, solo en el
+# documento maestro (.docx). Por eso uc_id usa el mismo identificador que
+# governance/gates/gates.md en argos-control (S1 Scope Gate .. S8 Acceptance
+# Gate) — ES un artefacto real del repo, a diferencia de inventar una
+# numeración UCx.y que no existe en ningún YAML/README. Si algún día se
+# publica un catálogo de UC formal, esta clave debería migrar a él.
+#
+# status es una afirmación verificada en este repo/sesión, no un plan:
+#   PASS     — construido y probado, sin gap conocido.
+#   PARTIAL  — parte real construida y probada; parte con gap conocido y
+#              anotado explícitamente en notes (nunca "PASS" con un gap
+#              oculto).
+#   BLOCKED  — depende de algo que no existe todavía (infra real, otro
+#              gate previo, o una decisión pendiente).
+#
+# harness/traceability.py valida consistencia interna: sin duplicados,
+# sin refs a story_ids/contract_ids inexistentes, sin huérfanos (todo ARG-xxx
+# P0 de argos-control/project/backlog/backlog.yaml debe aparecer en algún
+# entry), y la regla dura de gates.md: un entry P0 con status=BLOCKED
+# bloquea la release candidate (ver harness/runner/cli.py, --check-trace).
+
+schema_version: 1
+
+entries:
+  - uc_id: G0
+    sprint: S1
+    objective: "Scope Gate: repos/releases, SBOM/firma, cyber-range reset/kill switch"
+    story_ids: [ARG-001, ARG-002, ARG-003]
+    contract_ids: []
+    test_ids:
+      - argos-control/scripts/test.sh
+      - argos-platform/scripts/test.sh
+      - argos-platform/cyber-range/kill-switch/kill-switch.sh
+      - argos-platform/cyber-range/reset/reset.sh
+    metric_ids: []
+    evidence_refs:
+      - argos-control/project/backlog/backlog.yaml
+      - argos-control/releases/schema/release-manifest.schema.json
+    gate_id: G0
+    status: PARTIAL
+    notes: >
+      ARG-001/002/003 construidos y probados localmente (namespaces
+      Pod Security "restricted", default-deny, kill-switch con el bug de
+      pipefail corregido). El propio criterio de salida de G0 exige "P0 y
+      DoR aprobados" con CI verde: argos-control y argos-platform están en
+      verde, pero argos-validation/argos-core/argos-cyber-tools/argos-smartops
+      siguen bloqueados en GitHub Actions ("workflow was not found" al
+      llamar al reusable workflow de argos-control) — pendiente de lo que
+      el usuario encuentre en la configuración de Actions a nivel de
+      organización. G0 no puede declararse PASS mientras eso siga abierto.
+
+  - uc_id: G1
+    sprint: S2
+    objective: "Data & Contract Gate: 10 contratos v1, F01-F09, harness y tests producer/consumer"
+    story_ids: [ARG-004, ARG-005, ARG-006]
+    contract_ids:
+      - asset-snapshot.v1
+      - vulnerability-finding.v1
+      - security-event.v1
+      - incident.v1
+      - recommendation.v1
+      - policy-decision.v1
+      - approval.v1
+      - action-result.v1
+      - evidence-manifest.v1
+      - soc-handover.v1
+    test_ids:
+      - argos-contracts-scenarios/scripts/test.sh
+      - argos-contracts-scenarios/validators/validate_fixtures.py
+      - argos-validation/tests/test_fixture_loader.py
+      - argos-validation/tests/test_cli_suites.py
+      - argos-core/tests/contract/test_producer_outputs_validate.py
+      - argos-cyber-tools/tests/contract/test_tool_catalog_and_action_result.py
+    metric_ids: []
+    evidence_refs:
+      - argos-contracts-scenarios/envelope/v1/argos-envelope.schema.json
+    gate_id: G1
+    status: PASS
+    notes: >
+      Los 10 contratos existen, validan y tienen fixtures F01-F09 con
+      producer/consumer tests reales cruzando repos (argos-core y
+      argos-cyber-tools validan contra los schemas reales de
+      argos-contracts-scenarios, no un doble mantenido a mano).
+
+  - uc_id: G2
+    sprint: S3
+    objective: "C-06: inventario, SBOM/findings y priorización ESP+KEV+EPSS"
+    story_ids: [ARG-007, ARG-008, ARG-009, ARG-010]
+    contract_ids: [asset-snapshot.v1, vulnerability-finding.v1]
+    test_ids:
+      - argos-core/tests/unit/test_asset_reconciler.py
+      - argos-core/tests/unit/test_vulnerability_adapter.py
+      - argos-core/tests/unit/test_risk_engine.py
+    metric_ids:
+      - prioritization_evidence_completeness  # AC04
+      - ungrounded_cve_rate  # AC03
+      - critical_drift_missed_rate  # ARG-010 (P1)
+    evidence_refs:
+      - argos-validation/suites/c06/suite.yaml
+      - argos-validation/evaluators/drift/__init__.py
+    gate_id: G2
+    status: PASS
+    notes: >
+      Incluye ARG-010 (P1, drift as-designed/as-built), evaluador y
+      thresholds cableados en suites/c06 (propuesta v0.6.25.4, 11.14:
+      "drift crítico omitido = 0").
+
+  - uc_id: G3
+    sprint: S4
+    objective: "C-07: exposición, RBAC, ruta controlada y validación en range"
+    story_ids: [ARG-011, ARG-012, ARG-013, ARG-014]
+    contract_ids: [policy-decision.v1]
+    test_ids:
+      - argos-cyber-tools/tests/graph/test_graph_builder.py
+      - argos-cyber-tools/tests/graph/test_exposure.py
+      - argos-cyber-tools/tests/graph/test_escalation.py
+      - argos-cyber-tools/tests/graph/test_attack_path.py
+      - argos-cyber-tools/tests/graph/test_blast_radius.py
+      - argos-cyber-tools/tests/authorization/test_gateway.py
+    metric_ids:
+      - tool_correctness  # AC09 (attack path validado vía Gateway.authorize real)
+      - adversarial_block_rate  # AC05 / AC11
+    evidence_refs:
+      - argos-validation/suites/c07/suite.yaml
+      - argos-cyber-tools/policies/target-allowlists
+    gate_id: G3
+    status: PASS
+    notes: >
+      C-07 completo (ARG-011->012->013->014, en ese orden de dependencia):
+      grafo RBAC/red real (no mock), escalada de privilegios, validación de
+      attack path contra el Gateway real (authorize()), y blast radius con
+      evidence_refs/uncertainty explícitos (propuesta v0.6.25.4, 12.13).
+      ARG-014 es P1 y está incluido, no pendiente.
+
+  - uc_id: G4
+    sprint: S5
+    objective: "C-08 detección: Wazuh/Falco/Hubble/Audit, MISP, Incident v1 y timeline"
+    story_ids: [ARG-015, ARG-016, ARG-017, ARG-018]
+    contract_ids: [security-event.v1, incident.v1]
+    test_ids:
+      - argos-core/tests/unit/test_normalizer.py
+      - argos-core/tests/unit/test_correlator.py
+      - argos-core/tests/unit/test_dmz_detector.py
+      - argos-core/tests/integration/test_pipeline.py
+    metric_ids:
+      - detection_f1  # AC06
+      - triage_severity_consistency  # AC07
+    evidence_refs:
+      - argos-validation/suites/c08/suite.yaml
+    gate_id: G4
+    status: PASS
+    notes: >
+      Incluye ARG-018 (P1, detector DMZ) con source_mode explícito
+      (REAL_CONNECTOR | EMULATED, propuesta v0.6.25.4, 13.13) para que un
+      hallazgo nunca se declare de conector real cuando en realidad viene de
+      un replay contractual.
+
+  - uc_id: G5
+    sprint: S6
+    objective: "HITL Response: Recommendation v1, OPA, approval, Shuffle y rollback"
+    story_ids: [ARG-019, ARG-020, ARG-021, ARG-022]
+    contract_ids: [recommendation.v1, policy-decision.v1, approval.v1, action-result.v1]
+    test_ids:
+      - argos-core/tests/unit/test_recommendation.py
+      - argos-cyber-tools/tests/authorization/test_gateway.py
+      - argos-cyber-tools/tests/anti-replay/test_approval_anti_replay.py
+      - argos-cyber-tools/tests/idempotency/test_executor_idempotency.py
+      - argos-cyber-tools/tests/rollback/test_rollback_cycle.py
+      - argos-smartops/tests/api/test_approvals_api.py
+      - argos-smartops/tests/integration/test_cross_repo_approval_interop.py
+      - argos-smartops/tests/api/test_handover_api.py
+    metric_ids:
+      - idempotency_violation_rate  # AC13
+      - adversarial_block_rate  # AC10 / AC11 (bloqueo sin aprobación)
+    evidence_refs:
+      - argos-core/models/deterministic-fallback/runbook.yaml
+    gate_id: G5
+    status: PASS
+    notes: >
+      Incluye ARG-022 (P1, SmartOps handover) con soc_mode explícito
+      (SOC_EMULATED, propuesta v0.6.25.4, 14.16 — SOC_REAL exige endpoint
+      real, que no existe todavía). plan_hash/signature_ref se calculan con
+      la misma fórmula (tool, target, action, params) en argos-smartops
+      (emisor) y argos-cyber-tools (validador) — test_cross_repo_approval_interop.py
+      lo prueba de forma cruzada, no solo dentro de un repo.
+
+  - uc_id: G6
+    sprint: S7
+    objective: "Release Candidate: CP00-CP13, F09 adversarial, resiliencia, backup/restore"
+    story_ids: [ARG-023, ARG-024, ARG-025, ARG-026]
+    contract_ids: []
+    test_ids:
+      - argos-cyber-tools/tests/adversarial/test_adversarial_fixtures_blocked.py
+      - argos-validation/suites/adversarial/suite.yaml
+      - argos-smartops/tests/e2e/test_full_flow.py
+    metric_ids:
+      - adversarial_block_rate  # AC05 / AC11 (F09)
+    evidence_refs: []
+    gate_id: G6
+    status: PARTIAL
+    notes: >
+      ARG-024 (F09 adversarial + regresión) construido y probado.
+      Gaps reales, no ocultos: ARG-023 (checkpoints CP00-CP13 como
+      artefacto integrado end-to-end) solo existe hoy como mención en
+      sprint-definitions/S7.md, sin implementación; ARG-025
+      (backup/restore de OpenSearch/Ceph RGW) no tiene NINGÚN script en
+      argos-platform (tests/recovery/README.md documenta la intención,
+      cero código); ARG-026 (evidence store/dashboards/paquete firmado,
+      P1 pero confirmado prioritario) tiene el evidence manifest
+      (harness/evidence/manifest.py) pero no el panel operativo —
+      ver tarea abierta "ARG-026: minimal evidence operational panel".
+      G6 no puede declararse PASS con estos tres gaps abiertos.
+
+  - uc_id: G7
+    sprint: S8
+    objective: "Acceptance Gate: AC01-AC14, DRR, as-built, runbooks, evidence pack y PI3"
+    story_ids: [ARG-027, ARG-028]
+    contract_ids: [evidence-manifest.v1, soc-handover.v1]
+    test_ids:
+      - argos-validation/tests/test_evidence_manifest.py
+      - argos-validation/tests/test_report_schema.py
+      - argos-validation/tests/test_run_summary.py
+      - argos-validation/harness/runner/cli.py
+    metric_ids:
+      - trace_completeness  # AC14
+    evidence_refs:
+      - argos-control/project/acceptance/acceptance-criteria.yaml
+    gate_id: G7
+    status: BLOCKED
+    notes: >
+      harness/runner/cli.py ejecuta UNA suite a la vez (c06/c07/c08/
+      adversarial/integration/regression) y produce run_summary.json +
+      evidence manifest reales, pero no existe todavía un orquestador que
+      ejecute las 14 AC01-AC14 como un solo release candidate y produzca un
+      DRR. No existe as-built, runbooks rellenados (solo
+      argos-control/templates/runbook/runbook-template.md, una plantilla
+      vacía) ni un evidence pack firmado end-to-end. Depende de G6, que
+      también está PARTIAL — G7 se queda correctamente BLOCKED, no se
+      fuerza un PASS prematuro.
