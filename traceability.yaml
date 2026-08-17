@@ -300,6 +300,7 @@ entries:
       - argos-smartops/docs/operator-package.md
       - argos-smartops/docs/soc-handover-package.md
       - argos-smartops/api/handover.py
+      - argos-cyber-tools/docs/cyber-range-package.md
     gate_id: G7
     status: BLOCKED
     notes: >
@@ -355,9 +356,18 @@ entries:
       quedan como gaps honestos — sin ninguna definición operativa de
       "escalar un caso" en ningún artefacto del repo, inventarla habría
       sido tomar una decisión de diseño sin contexto para hacerlo bien.
-      Siguen faltando 5 de los 8 paquetes de ARG-028 (Release/restore,
-      Operación XDR, Cyber-range, Gobierno, Formación — todos exigen
-      infraestructura real o participación humana que no existe) y
-      runbooks para el resto del tool_catalog. Depende de G6, que
-      también está PARTIAL — G7 se queda correctamente BLOCKED, no se
-      fuerza un PASS prematuro.
+      El paquete "Cyber-range" (4 de 8) también está escrito:
+      argos-cyber-tools/docs/cyber-range-package.md — RoE
+      (scenario.yaml), kill switch (con su bug real de pipefail),
+      init/reset, evidencias, todo real. Gap concreto encontrado y
+      documentado, no ocultado: hay DOS capas de allowlist distintas —
+      la de herramienta (este repo, rellena y aplicada de verdad) y la
+      del propio rango (argos-platform/cyber-range/targets/allowlist.yaml,
+      que sigue siendo plantilla con "TODO" literales en
+      approved_repositories/sinkhole_endpoints/targets). El rango no
+      puede declararse listo mientras esa segunda capa no se rellene.
+      Siguen faltando 4 de los 8 paquetes de ARG-028 (Release/restore,
+      Operación XDR, Gobierno, Formación — todos exigen infraestructura
+      real o participación humana que no existe) y runbooks para el
+      resto del tool_catalog. Depende de G6, que también está PARTIAL —
+      G7 se queda correctamente BLOCKED, no se fuerza un PASS prematuro.
