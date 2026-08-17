@@ -302,6 +302,7 @@ entries:
       - argos-smartops/api/handover.py
       - argos-cyber-tools/docs/cyber-range-package.md
       - argos-core/docs/operations-package.md
+      - argos-control/releases/0.1.0-dev/release-restore-package.md
     gate_id: G7
     status: BLOCKED
     notes: >
@@ -377,9 +378,20 @@ entries:
       escritura física (pendiente ARG-026); dashboards mínimos y salud
       NO existen ni como interfaz (verificado en argos-core y
       argos-smartops). Documentado sin difuminar la diferencia entre
-      "interfaz sin implementar" y "ni siquiera hay interfaz". Siguen
-      faltando 3 de los 8 paquetes de ARG-028 (Release/restore, Gobierno,
-      Formación — todos exigen infraestructura real o participación
-      humana que no existe) y runbooks para el resto del tool_catalog.
-      Depende de G6, que también está PARTIAL — G7 se queda
-      correctamente BLOCKED, no se fuerza un PASS prematuro.
+      "interfaz sin implementar" y "ni siquiera hay interfaz". El
+      paquete "Release/restore" (6 de 8) también está escrito:
+      argos-control/releases/0.1.0-dev/release-restore-package.md —
+      hallazgo real: la pipeline de checksums/SBOM/firmas
+      (reusable-container-build/sbom-sign/release-validation.yaml) es
+      código real, completo, fail-closed (cosign keyless + attestation +
+      verify), pero nunca se ha ejecutado — verificado en los 7 repos,
+      solo argos-platform la referencia y está comentada explícitamente
+      hasta que exista un Dockerfile (ARG-002), y no hay ninguno en
+      ningún repo. Backup/restore sigue BLOCKED (DEP-02), no por falta
+      de escribir el script. Quedan 2 de los 8 paquetes de ARG-028:
+      Gobierno (exige infraestructura real de gates/CI que ya funciona
+      parcialmente, pendiente de consolidar) y Formación (exige
+      participación humana real — sesiones de formación, no código) — y
+      runbooks para el resto del tool_catalog. Depende de G6, que
+      también está PARTIAL — G7 se queda correctamente BLOCKED, no se
+      fuerza un PASS prematuro.
