@@ -5,7 +5,7 @@ import pathlib
 import pytest
 import yaml
 
-from harness.traceability import load_traceability, validate
+from harness.traceability import load_traceability, main, validate
 
 pytestmark = pytest.mark.filterwarnings("ignore")
 
@@ -165,3 +165,39 @@ def test_real_traceability_file_matches_the_known_project_state():
     assert result.errors == []
     assert result.warnings == []
     assert result.p0_blocked_gates == ["G7 (G7): contiene story(s) P0 y status=BLOCKED"]
+
+
+def test_main_cli_exits_1_against_the_real_file_reporting_the_known_p0_block(capsys):
+    """El wrapper main() (parseo de --file, prints, código de salida) no
+    tenía ningún test directo — solo validate()/load_traceability()
+    estaban probados por separado. main() resuelve org_root desde la
+    ubicación real del módulo (sin --org-root en el CLI), así que solo se
+    puede ejercitar de forma determinista contra el árbol real, no contra
+    un archivo sintético aislado — eso ya lo cubre validate() directamente
+    en el resto de este fichero."""
+    repo_root = pathlib.Path(__file__).resolve().parents[1]
+    real_file = repo_root / "traceability.yaml"
+    org_root = repo_root.parent
+    if not (org_root / "argos-control" / "project" / "backlog" / "backlog.yaml").exists():
+        pytest.skip("argos-control no está disponible como hermano")
+
+    exit_code = main(["--file", str(real_file)])
+    assert exit_code == 1
+    assert "P0 BLOCKED" in capsys.readouterr().out
+
+
+def test_main_cli_exits_0_when_validation_result_is_ok(monkeypatch, capsys, tmp_path):
+    """Complementa el test anterior con el camino feliz, sin depender de
+    org_root real: valida() se monkeypatchea para devolver un resultado
+    limpio conocido, aislando el comportamiento del propio wrapper main()
+    (exit code, mensaje) de la lógica de cruce con backlog/contratos."""
+    from harness.traceability import ValidationResult
+
+    monkeypatch.setattr("harness.traceability.validate", lambda *a, **k: ValidationResult(errors=[], warnings=[], p0_blocked_gates=[]))
+
+    clean = tmp_path / "traceability.yaml"
+    clean.write_text(yaml.safe_dump({"entries": [{"uc_id": "X", "gate_id": "X", "status": "PASS"}]}), encoding="utf-8")
+
+    exit_code = main(["--file", str(clean)])
+    assert exit_code == 0
+    assert "traceability.yaml OK" in capsys.readouterr().out

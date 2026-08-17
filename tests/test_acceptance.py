@@ -3,7 +3,13 @@ from __future__ import annotations
 import json
 import pathlib
 
-from harness.acceptance import ALL_AC_IDS, run_acceptance, seal_report, write_acceptance_report
+from harness.acceptance import (
+    ALL_AC_IDS,
+    main,
+    run_acceptance,
+    seal_report,
+    write_acceptance_report,
+)
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -115,3 +121,20 @@ def test_write_acceptance_report_produces_two_real_files_on_disk(contracts_path,
     written = json.loads(report_path.read_text(encoding="utf-8"))
     seal = json.loads(seal_path.read_text(encoding="utf-8"))
     assert seal["report_sha256"] == seal_report(written)["report_sha256"]
+
+
+def test_main_cli_runs_end_to_end_and_writes_real_files(contracts_path, tmp_path, capsys):
+    """El wrapper main() (argparse, escritura de ficheros, prints por AC,
+    código de salida) no tenía ningún test directo — solo run_acceptance()
+    estaba probado. Corre contra las suites reales por defecto (mismo
+    estado conocido: 14/14 AC cubiertos, overall=FAIL por AC03/AC08)."""
+    out_dir = tmp_path / "acceptance_out"
+    exit_code = main(["--out-dir", str(out_dir)])
+
+    assert exit_code == 1  # overall=FAIL conocido (AC03/AC08 contra umbral de aceptación)
+    assert (out_dir / "acceptance_report.json").exists()
+    assert (out_dir / "acceptance_seal.json").exists()
+
+    out = capsys.readouterr().out
+    assert "AC01:" in out and "SIN COBERTURA" not in out
+    assert "overall=FAIL" in out

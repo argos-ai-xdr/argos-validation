@@ -5,7 +5,7 @@ import pathlib
 
 import pytest
 
-from harness.checkpoints import load_checkpoints, validate_run
+from harness.checkpoints import load_checkpoints, main, validate_run
 
 pytestmark = pytest.mark.filterwarnings("ignore")
 
@@ -183,3 +183,31 @@ def test_the_real_argos_cyb_01_sample_run_validates_eleven_of_fourteen_checkpoin
     # — deben seguir encadenados al mismo run que el resto, no solo pasar
     # su propia comprobación de forma aislada.
     assert result.run_ids_seen == ("run-smoke-001",)
+
+
+def test_main_cli_exits_1_on_the_known_real_gap_and_0_on_a_fully_covered_run(contracts_path, capsys, tmp_path):
+    """El wrapper main() (parseo de argv, prints, código de salida) no
+    tenía ningún test directo — solo validate_run() estaba probado.
+    Contra el sample-run real conocido, main() debe salir con 1 (CP00/01/12
+    faltan de verdad); contra un run sintético con todos los CPs
+    presentes, debe salir con 0."""
+    run_dir = contracts_path / "scenarios" / "ARGOS-CYB-01" / "expected" / "sample-run"
+    if not run_dir.exists():
+        pytest.skip("expected/sample-run no disponible en este checkout")
+
+    exit_code = main(["--run-dir", str(run_dir)])
+    assert exit_code == 1
+    out = capsys.readouterr().out
+    assert "FALTA baseline_manifest.json" in out
+    assert "overall=FAIL" in out
+
+    checkpoints = [{"id": "CP02", "phase": "Descubrimiento", "evidence_files": [{"filename": "asset_diff.json", "contract": "asset-snapshot"}]}]
+    checkpoints_path = tmp_path / "checkpoints.yaml"
+    import yaml
+
+    checkpoints_path.write_text(yaml.safe_dump({"checkpoints": checkpoints}), encoding="utf-8")
+    (tmp_path / "asset_diff.json").write_text(json.dumps(ASSET_SNAPSHOT), encoding="utf-8")
+
+    exit_code_ok = main(["--run-dir", str(tmp_path), "--checkpoints", str(checkpoints_path)])
+    assert exit_code_ok == 0
+    assert "overall=OK" in capsys.readouterr().out
