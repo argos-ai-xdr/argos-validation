@@ -201,11 +201,14 @@ entries:
       - argos-validation/tests/test_checkpoints.py
       - argos-contracts-scenarios/scenarios/ARGOS-CYB-01/checkpoints/checkpoints.yaml
       - argos-contracts-scenarios/scenarios/ARGOS-CYB-01/expected/sample-run
+      - argos-cyber-tools/tests/idempotency/test_executor_idempotency.py
     metric_ids:
       - adversarial_block_rate  # AC05 / AC11 (F09)
+      - idempotency_violation_rate  # AC13 — mitad "retry/interrupción/idempotencia" de ARG-025
     evidence_refs:
       - argos-validation/harness/reporters/evidence_panel.py
       - argos-validation/harness/checkpoints.py
+      - argos-validation/evaluators/resilience/__init__.py
     gate_id: G6
     status: PARTIAL
     notes: >
@@ -225,10 +228,25 @@ entries:
       verification) no tienen todavía el código que los capture como
       archivo — el propio sample-run los deja ausentes a propósito para
       que el validador los reporte como faltantes, no como resuelto.
-      ARG-025 (backup/restore de OpenSearch/Ceph RGW) sigue sin NINGÚN
-      script en argos-platform (tests/recovery/README.md documenta la
-      intención, cero código). G6 no puede declararse PASS con estos dos
-      gaps abiertos.
+      ARG-025 ("backup/restore, retry, interrupción e idempotencia") se
+      divide en dos partes con estados muy distintos, no debe tratarse
+      como un bloque monolítico: la mitad "retry/interrupción/
+      idempotencia" SÍ está cubierta de verdad — mismo mecanismo que
+      AC13/ARG-021 (IdempotencyStore real en argos-cyber-tools,
+      test_executor_idempotency.py, evaluators/resilience con tolerancia
+      cero). La mitad "backup/restore de OpenSearch/Ceph RGW" sigue sin
+      NINGÚN script en argos-platform, y a diferencia de otros gaps de
+      esta lista NO es solo "falta escribirlo": Ceph RGW no tiene ni
+      siquiera decidido si se despliega como Rook-Ceph self-hosted o como
+      servicio S3 gestionado de OSC (DEP-02, ver
+      argos-platform/platform/ceph-rgw/README.md) y OpenSearch sigue
+      `enabled: false` en helm/argos-services/values.yaml con versión de
+      chart "TODO". Escribir un script de backup/restore hoy exigiría
+      inventar contra qué endpoint/API opera — se deja correctamente
+      BLOCKED hasta que DEP-02 se resuelva y ENV-QUAL-01 provea un
+      cluster real, mismo principio que ENV-QUAL-01/CAP-01 en la propia
+      propuesta v0.6.25.4 (§3.1/§3.3: no fabricar contra infraestructura
+      que no existe). G6 no puede declararse PASS con este gap abierto.
 
   - uc_id: G7
     sprint: S8
