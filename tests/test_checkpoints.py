@@ -152,12 +152,17 @@ def test_ndjson_with_mixed_run_ids_is_flagged_within_a_single_file(contracts_pat
     assert result.schema_invalid == ("CP06",)
 
 
-def test_the_real_argos_cyb_01_sample_run_validates_the_nine_contract_backed_checkpoints(contracts_path):
-    """Integración contra el sample-run real ensamblado a partir de
-    fixtures/smoke/ (todos con run_id=run-smoke-001) — prueba que ARG-023
-    funciona de verdad, no solo con datos sintéticos de test. Los 5
-    checkpoints sin contrato v1 (CP00/01/04/05/12) siguen siendo un gap
-    real y conocido: no hay artefacto que capturarles todavía."""
+def test_the_real_argos_cyb_01_sample_run_validates_eleven_of_fourteen_checkpoints(contracts_path):
+    """Integración contra el sample-run real: 9 checkpoints respaldados
+    por contrato v1 (fixtures/smoke/, todos run_id=run-smoke-001) más
+    CP04/CP05, generados invocando el código real de producción
+    (argos-core.services.risk_engine.rank_findings y
+    argos-cyber-tools.graph.attack_path.validate_attack_path — ninguno de
+    los dos necesita un cluster real, ambos son lógica pura) — prueba que
+    ARG-023 funciona de verdad, no solo con datos sintéticos de test.
+    CP00/CP01/CP12 siguen siendo un gap real y conocido: exigen un
+    cyber-range real desplegado (reset con hash verificable, inyección de
+    workload, verificación post-contención) que hoy no existe."""
     checkpoints_path = contracts_path / "scenarios" / "ARGOS-CYB-01" / "checkpoints" / "checkpoints.yaml"
     run_dir = contracts_path / "scenarios" / "ARGOS-CYB-01" / "expected" / "sample-run"
     if not checkpoints_path.exists() or not run_dir.exists():
@@ -165,12 +170,16 @@ def test_the_real_argos_cyb_01_sample_run_validates_the_nine_contract_backed_che
 
     result = validate_run(run_dir, load_checkpoints(checkpoints_path), contracts_path=contracts_path)
 
-    contract_backed = {"CP02", "CP03", "CP06", "CP07", "CP08", "CP09", "CP10", "CP11", "CP13"}
-    internal_only = {"CP00", "CP01", "CP04", "CP05", "CP12"}
+    covered = {"CP02", "CP03", "CP04", "CP05", "CP06", "CP07", "CP08", "CP09", "CP10", "CP11", "CP13"}
+    requires_real_cluster = {"CP00", "CP01", "CP12"}
 
     failing = {s.cp_id for s in result.statuses if not s.ok}
-    assert failing == internal_only  # gap conocido, no oculto
-    assert result.run_ids_seen == ("run-smoke-001",)
+    assert failing == requires_real_cluster  # gap conocido, no oculto
 
     passing = {s.cp_id for s in result.statuses if s.ok}
-    assert passing == contract_backed
+    assert passing == covered
+    # CP04/CP05 no tienen contrato v1 (artefactos internos), pero el
+    # validador igualmente extrae run_id de cualquier JSON con ese campo
+    # — deben seguir encadenados al mismo run que el resto, no solo pasar
+    # su propia comprobación de forma aislada.
+    assert result.run_ids_seen == ("run-smoke-001",)

@@ -220,14 +220,18 @@ entries:
       CP00-CP13 y trazabilidad end-to-end) ya tiene un validador real
       (harness/checkpoints.py) que exige un único run_id coherente en
       todos los checkpoints con contrato v1 — probado contra un sample-run
-      real ensamblado desde fixtures/smoke/: los 9 checkpoints respaldados
-      por contrato (CP02/03/06/07/08/09/10/11/13) validan end-to-end con
-      run_id=run-smoke-001 compartido. Gap real que SIGUE abierto, no
-      oculto: CP00/01/04/05/12 (sin contrato v1, artefactos internos:
-      baseline_manifest, deployment_log, risk_ranking, attack_path,
-      verification) no tienen todavía el código que los capture como
-      archivo — el propio sample-run los deja ausentes a propósito para
-      que el validador los reporte como faltantes, no como resuelto.
+      real: 11/14 checkpoints validan end-to-end con run_id=run-smoke-001
+      compartido (CP02/03/06/07/08/09/10/11/13 desde fixtures/smoke/, más
+      CP04/CP05 generados invocando el código REAL de producción —
+      argos-core.services.risk_engine.rank_findings y
+      argos-cyber-tools.graph.attack_path.validate_attack_path contra
+      Gateway.authorize() real — ninguno necesita cluster). Gap real que
+      SIGUE abierto, no oculto: CP00 (reset con hash verificable), CP01
+      (inyección de workload) y CP12 (verificación post-contención)
+      exigen un cyber-range realmente desplegado que no existe todavía
+      (mismo bloqueo que ENV-QUAL-01) — el propio sample-run los deja
+      ausentes a propósito para que el validador los reporte como
+      faltantes, no como resuelto.
       ARG-025 ("backup/restore, retry, interrupción e idempotencia") se
       divide en dos partes con estados muy distintos, no debe tratarse
       como un bloque monolítico: la mitad "retry/interrupción/
