@@ -9,6 +9,7 @@
 | [`traceability.py`](traceability.py) | TRACE-01: valida `../traceability.yaml` (UC/gate → story → contrato → test → métrica → evidencia) contra el estado real de los repos hermanos |
 | [`reporters/evidence_panel.py`](reporters/evidence_panel.py) | ARG-026: índice HTML offline por run/CP/AC sobre los `run_summary.json`/`evidence_manifest.json` ya escritos — sin JS ni analítica, la reconstrucción del evidence pack no depende de este panel |
 | [`checkpoints.py`](checkpoints.py) | ARG-023: valida un directorio de run contra `argos-contracts-scenarios/scenarios/ARGOS-CYB-01/checkpoints/checkpoints.yaml` — evidencia CP00-CP13 presente, schema real donde hay contrato v1, y un único `run_id` coherente en todos los checkpoints (trazabilidad end-to-end) |
+| [`reproducibility.py`](reproducibility.py) | AC01: corre la misma suite dos veces sobre el mismo checkout y compara `value`/`gate`/`sample_size` métrica por métrica (ignora `generated_at`, que se espera que difiera) |
 
 Ejecución: `python -m harness.runner.cli --suite suites/c06/suite.yaml --thresholds thresholds/smoke.yaml`.
 
