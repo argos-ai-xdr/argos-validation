@@ -26,7 +26,14 @@ htmlcov/
 *.local.yaml
 secrets/
 
-# Evidencia/reportes generados por un run — no versionar (ADR-016)
+# Evidencia/reportes generados por un run — no versionar (ADR-016).
+# Anclado a la raíz (/evidence/, no evidence/): un patrón sin la barra
+# inicial coincide con CUALQUIER directorio llamado "evidence" en todo el
+# árbol, incluido harness/evidence/ (el paquete Python real de
+# harness/evidence/manifest.py) — eso lo dejó fuera de git desde el
+# primer commit del repo sin que ningún test lo detectara (los tests
+# leen del disco local, no de lo que hay realmente versionado). Bug real
+# encontrado revisando `git status --ignored`, no leyendo el código.
 run_summary.json
 reports/generated/
-evidence/
+/evidence/
