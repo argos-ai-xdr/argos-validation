@@ -35,3 +35,6 @@ thresholds:
   asset_coverage: # AC02
     min: 0.85
     critical: false
+  unapproved_execution_rate: # AC10 — crítico, igual que acceptance
+    max: 0.0
+    critical: true

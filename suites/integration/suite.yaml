@@ -21,3 +21,7 @@ checks:
     contract: action-result
     category: smoke
     metric_name: idempotency_violation_rate
+  - evaluator: evaluators.approval_gate
+    contract: action-result
+    category: smoke
+    metric_name: unapproved_execution_rate

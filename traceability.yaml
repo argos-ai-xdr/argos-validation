@@ -183,9 +183,11 @@ entries:
       - argos-smartops/tests/api/test_handover_api.py
     metric_ids:
       - idempotency_violation_rate  # AC13
-      - adversarial_block_rate  # AC10 / AC11 (bloqueo sin aprobación)
+      - adversarial_block_rate  # AC05 / AC11
+      - unapproved_execution_rate  # AC10 (corrige nota anterior que citaba adversarial_block_rate para AC10, era incorrecta)
     evidence_refs:
       - argos-core/models/deterministic-fallback/runbook.yaml
+      - argos-validation/evaluators/approval_gate/__init__.py
     gate_id: G5
     status: PASS
     notes: >
@@ -194,7 +196,13 @@ entries:
       real, que no existe todavía). plan_hash/signature_ref se calculan con
       la misma fórmula (tool, target, action, params) en argos-smartops
       (emisor) y argos-cyber-tools (validador) — test_cross_repo_approval_interop.py
-      lo prueba de forma cruzada, no solo dentro de un repo.
+      lo prueba de forma cruzada, no solo dentro de un repo. AC10
+      (ejecuciones sin aprobación = 0) no tenía evaluador propio hasta
+      ahora — mismo gap descubierto que AC02, misma causa (nunca se
+      había forzado una comprobación de completitud AC01-AC14). Cerrado
+      con evaluators/approval_gate: trata approval caducada, de rol
+      inválido o rechazada exactamente como "sin aprobación", no como
+      aprobación parcial.
 
   - uc_id: G6
     sprint: S7

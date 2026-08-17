@@ -33,3 +33,6 @@ thresholds:
   asset_coverage:
     min: 0.0
     critical: false
+  unapproved_execution_rate:
+    max: 1.0
+    critical: false

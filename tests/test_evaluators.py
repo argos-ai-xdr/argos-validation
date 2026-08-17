@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import json
+import pathlib
+
 import pytest
 
 from evaluators import (
+    approval_gate,
     detection,
     drift,
     hallucination,
@@ -281,3 +285,92 @@ def test_inventory_coverage_extra_unexpected_assets_do_not_affect_the_rate():
     fixtures = [{"asset_id": "a1"}, {"asset_id": "a2"}, {"asset_id": "unexpected-extra"}]
     metric = inventory_coverage.evaluate(fixtures, expected_assets=_EXPECTED_ASSETS)
     assert metric.value == 1.0
+
+
+def _action_result(**overrides: object) -> dict:
+    base: dict[str, object] = {
+        "action_id": "action-1",
+        "dry_run": False,
+        "started_at": "2026-08-17T10:00:00Z",
+        "status": "succeeded",
+    }
+    base.update(overrides)
+    return base
+
+
+def _write_approval(contracts_path: pathlib.Path, name: str, **overrides: object) -> None:
+    base: dict[str, object] = {
+        "action_id": "action-1",
+        "decision": "APPROVE",
+        "role": "soc-approver",
+        "issued_at": "2026-08-17T09:59:00Z",
+        "expires_at": "2026-08-17T10:15:00Z",
+    }
+    base.update(overrides)
+    approval_dir = contracts_path / "fixtures" / "smoke" / "approval"
+    approval_dir.mkdir(parents=True, exist_ok=True)
+    (approval_dir / name).write_text(json.dumps(base), encoding="utf-8")
+
+
+def test_approval_gate_no_real_executions_is_vacuously_clean():
+    metric = approval_gate.evaluate([_action_result(dry_run=True)], contracts_path=None)
+    assert metric.value == 0.0
+    assert metric.sample_size == 0
+
+
+def test_approval_gate_cannot_load_approvals_counts_as_violation():
+    """Sin contracts_path no se puede confirmar que hubo aprobación
+    válida — para un gate crítico sin waiver eso debe tratarse como
+    violación, no como 'sin evidencia de lo contrario, se asume que sí'."""
+    metric = approval_gate.evaluate([_action_result()], contracts_path=None)
+    assert metric.value == 1.0
+
+
+def test_approval_gate_valid_approval_within_window_passes(tmp_path):
+    _write_approval(tmp_path, "approval-1.json")
+    metric = approval_gate.evaluate([_action_result()], contracts_path=tmp_path)
+    assert metric.value == 0.0
+    assert metric.sample_size == 1
+
+
+def test_approval_gate_missing_approval_is_a_violation(tmp_path):
+    metric = approval_gate.evaluate([_action_result()], contracts_path=tmp_path)
+    assert metric.value == 1.0
+    assert "action-1" in metric.detail
+
+
+def test_approval_gate_expired_approval_is_treated_as_no_approval(tmp_path):
+    _write_approval(tmp_path, "approval-1.json", expires_at="2026-08-17T09:59:30Z")  # antes de started_at
+    metric = approval_gate.evaluate([_action_result()], contracts_path=tmp_path)
+    assert metric.value == 1.0
+
+
+def test_approval_gate_wrong_role_is_treated_as_no_approval(tmp_path):
+    _write_approval(tmp_path, "approval-1.json", role="developer")
+    metric = approval_gate.evaluate([_action_result()], contracts_path=tmp_path)
+    assert metric.value == 1.0
+
+
+def test_approval_gate_rejected_decision_is_treated_as_no_approval(tmp_path):
+    _write_approval(tmp_path, "approval-1.json", decision="REJECT")
+    metric = approval_gate.evaluate([_action_result()], contracts_path=tmp_path)
+    assert metric.value == 1.0
+
+
+def test_approval_gate_dry_run_actions_never_need_approval(tmp_path):
+    """dry_run=true nunca ejecuta nada real (contrato del propio campo,
+    ver schemas/action-result) — no debe exigir Approval."""
+    metric = approval_gate.evaluate([_action_result(dry_run=True)], contracts_path=tmp_path)
+    assert metric.value == 0.0
+    assert metric.sample_size == 0
+
+
+def test_approval_gate_real_smoke_fixtures_validate_end_to_end(contracts_path):
+    """Integración contra fixtures/smoke/ reales: action-result-001.json
+    (action_id=policy-smoke-001, dry_run=false) tiene una Approval real
+    correspondiente, no aprobada/expirada a mano para el test."""
+    action_result = json.loads(
+        (contracts_path / "fixtures" / "smoke" / "action-result" / "action-result-001.json").read_text(encoding="utf-8")
+    )
+    metric = approval_gate.evaluate([action_result], contracts_path=contracts_path)
+    assert metric.value == 0.0
