@@ -297,6 +297,7 @@ entries:
       - argos-cyber-tools/runbooks/scale_to_zero.md
       - argos-control/releases/0.1.0-dev/as-built.md
       - argos-control/releases/0.1.0-dev/release-manifest.yaml
+      - argos-smartops/docs/operator-package.md
     gate_id: G7
     status: BLOCKED
     notes: >
@@ -332,9 +333,19 @@ entries:
       componente, y 8 desviaciones conocidas sin ocultar ninguna.
       release-manifest.yaml también se actualizó — solo tenía el
       "Initial commit" de ARG-001 (S1), desincronizado del estado real
-      tras S2-S8. Siguen faltando los otros 7 paquetes de ARG-028
-      (Release/restore, Operación XDR, HITL/SOAR, Cyber-range, SOC
-      handover, Gobierno, Formación — todos exigen infraestructura real o
+      tras S2-S8. El paquete "HITL/SOAR" (2 de 8) también está escrito:
+      argos-smartops/docs/operator-package.md — flujo real
+      approve/reject/expire→action→verify→rollback citando el código
+      exacto en los 3 repos, TTL real de 15 min, segregación de
+      funciones aplicada en 2 puntos del código, y el bug real de
+      plan_hash que rompía toda Approval hasta que
+      test_cross_repo_approval_interop.py lo detectó. `break-glass`
+      queda documentado como explícitamente FUERA de alcance de este
+      MVP (Anexo G.17 del documento, quality gate ST-17, reservado a
+      v0.6.26 — "SPECIFIED/PREPARED - NOT EXECUTED"), no un gap
+      silenciado. Siguen faltando 6 de los 8 paquetes de ARG-028
+      (Release/restore, Operación XDR, Cyber-range, SOC handover,
+      Gobierno, Formación — todos exigen infraestructura real o
       participación humana que no existe) y runbooks para el resto del
       tool_catalog. Depende de G6, que también está PARTIAL — G7 se
       queda correctamente BLOCKED, no se fuerza un PASS prematuro.
