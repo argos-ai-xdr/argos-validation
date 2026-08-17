@@ -6,3 +6,17 @@ scenario: ARGOS-CYB-01
 expected_event_ids:
   - evt-smoke-001
 source: "argos-contracts-scenarios/fixtures/smoke/security-event/wazuh-alert-001.json"
+
+# AC02 (Inventario): mismo principio que expected_event_ids arriba — el
+# único activo crítico real del escenario (scenario.yaml: "Servicio GSEG
+# simulado con Perfil de Seguridad del Elemento alto"), tal como lo
+# describe el propio fixture congelado de asset-snapshot, no una lista
+# inventada. criticality_esp se declara aquí (no solo en el fixture)
+# porque evaluators.inventory_coverage necesita saber la criticidad
+# ESPERADA incluso cuando el activo NO aparece en absoluto en los
+# fixtures observados — ahí es precisamente donde "ningún activo crítico
+# conocido omitido" tiene algo que comprobar.
+expected_assets:
+  - asset_id: asset-gseg-01
+    criticality_esp: high
+asset_source: "argos-contracts-scenarios/fixtures/smoke/asset-snapshot/gseg-simulado.json"

@@ -30,3 +30,6 @@ thresholds:
   critical_drift_missed_rate:
     max: 1.0
     critical: false
+  asset_coverage:
+    min: 0.0
+    critical: false

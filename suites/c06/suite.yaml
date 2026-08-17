@@ -18,3 +18,14 @@ checks:
     contract: asset-snapshot
     category: smoke
     metric_name: critical_drift_missed_rate
+  - evaluator: evaluators.inventory_coverage
+    contract: asset-snapshot
+    category: smoke
+    metric_name: asset_coverage
+    extra:
+      # Duplica ground-truth/manifests/argos-cyb-01.yaml a propósito — el
+      # runner no resuelve todavía referencias a ground-truth/ dentro de
+      # `extra` (mismo patrón/limitación ya documentado en
+      # suites/argos-cyb-01/suite.yaml para expected_event_ids).
+      expected_assets:
+        - {asset_id: asset-gseg-01, criticality_esp: high}

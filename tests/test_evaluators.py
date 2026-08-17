@@ -7,6 +7,7 @@ from evaluators import (
     drift,
     hallucination,
     human_agreement,
+    inventory_coverage,
     policy,
     prioritization,
     resilience,
@@ -238,3 +239,45 @@ def test_drift_single_snapshot_per_asset_is_not_comparable():
 def test_drift_no_fixtures_is_perfect():
     metric = drift.evaluate([])
     assert metric.value == 0.0
+
+
+_EXPECTED_ASSETS = [
+    {"asset_id": "a1", "criticality_esp": "high"},
+    {"asset_id": "a2", "criticality_esp": "low"},
+]
+
+
+def test_inventory_coverage_requires_ground_truth():
+    with pytest.raises(NotImplementedError):
+        inventory_coverage.evaluate([], expected_assets=None)
+
+
+def test_inventory_coverage_all_present_is_perfect():
+    fixtures = [{"asset_id": "a1"}, {"asset_id": "a2"}]
+    metric = inventory_coverage.evaluate(fixtures, expected_assets=_EXPECTED_ASSETS)
+    assert metric.value == 1.0
+    assert "criticos_omitidos=[]" in metric.detail
+
+
+def test_inventory_coverage_missing_non_critical_asset_hurts_coverage_but_not_flagged_critical():
+    fixtures = [{"asset_id": "a1"}]
+    metric = inventory_coverage.evaluate(fixtures, expected_assets=_EXPECTED_ASSETS)
+    assert metric.value == 0.5
+    assert "criticos_omitidos=[]" in metric.detail
+
+
+def test_inventory_coverage_missing_critical_asset_is_flagged_explicitly():
+    """El caso que AC02 existe para prevenir: un activo con
+    criticality_esp=high en el ground truth que no aparece en ningún
+    fixture — debe quedar visible en criticos_omitidos, no solo bajar el
+    número de cobertura junto con el resto."""
+    fixtures = [{"asset_id": "a2"}]
+    metric = inventory_coverage.evaluate(fixtures, expected_assets=_EXPECTED_ASSETS)
+    assert metric.value == 0.5
+    assert "criticos_omitidos=['a1']" in metric.detail
+
+
+def test_inventory_coverage_extra_unexpected_assets_do_not_affect_the_rate():
+    fixtures = [{"asset_id": "a1"}, {"asset_id": "a2"}, {"asset_id": "unexpected-extra"}]
+    metric = inventory_coverage.evaluate(fixtures, expected_assets=_EXPECTED_ASSETS)
+    assert metric.value == 1.0

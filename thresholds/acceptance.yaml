@@ -31,3 +31,6 @@ thresholds:
   critical_drift_missed_rate: # ARG-010 (propuesta v0.6.25.4, 11.14: "drift crítico omitido = 0")
     max: 0.0
     critical: true
+  asset_coverage: # AC02
+    min: 0.95
+    critical: false

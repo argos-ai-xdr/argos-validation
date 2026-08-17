@@ -32,3 +32,6 @@ thresholds:
   critical_drift_missed_rate: # ARG-010 — crítico, igual que acceptance
     max: 0.0
     critical: true
+  asset_coverage: # AC02
+    min: 0.85
+    critical: false

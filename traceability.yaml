@@ -99,13 +99,21 @@ entries:
       - prioritization_evidence_completeness  # AC04
       - ungrounded_cve_rate  # AC03
       - critical_drift_missed_rate  # ARG-010 (P1)
+      - asset_coverage  # AC02
     evidence_refs:
       - argos-validation/suites/c06/suite.yaml
       - argos-validation/evaluators/drift/__init__.py
+      - argos-validation/evaluators/inventory_coverage/__init__.py
+      - argos-validation/ground-truth/manifests/argos-cyb-01.yaml
     gate_id: G2
     status: PASS
     notes: >
-      Incluye ARG-010 (P1, drift as-designed/as-built), evaluador y
+      AC02 (cobertura de inventario) no tenía NINGÚN evaluador hasta
+      ahora, pese a estar en la lista de 14 AC — descubierto al construir
+      el acceptance runner de ARG-027 y forzar una comprobación de
+      completitud AC01-AC14. evaluators/inventory_coverage ya lo cubre con
+      ground truth real (el único activo crítico del escenario,
+      asset-gseg-01). Incluye ARG-010 (P1, drift as-designed/as-built), evaluador y
       thresholds cableados en suites/c06 (propuesta v0.6.25.4, 11.14:
       "drift crítico omitido = 0").
 
