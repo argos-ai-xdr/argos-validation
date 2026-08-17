@@ -19,7 +19,7 @@ argos-control/project/acceptance/    ─┘        (según suites/ y thresholds/
 
 ## Autonomous Validation: test/simulate/replay vs. execute/contain
 
-Prompt maestro de arquitectura objetivo §45 (ADR-017, Fase C): las
+Prompt maestro de arquitectura objetivo §45 (ADR-051, Fase C): las
 acciones de MEDICIÓN (correr una suite, simular un escenario, re-validar
 un run pasado) tienen libertad de ejecución automática; las acciones de
 IMPACTO REAL sobre el sistema objetivo (`execute`, `contain`) exigen

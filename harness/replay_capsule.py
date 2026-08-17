@@ -1,4 +1,4 @@
-"""ReplayCapsule (prompt maestro de arquitectura objetivo §42; ADR-017,
+"""ReplayCapsule (prompt maestro de arquitectura objetivo §42; ADR-051,
 Fase C).
 
 Empaqueta un run_dir ya capturado (p.ej. el sample-run real de

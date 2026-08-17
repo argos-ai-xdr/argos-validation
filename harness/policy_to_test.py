@@ -1,4 +1,4 @@
-"""Policy-to-Test (prompt maestro de arquitectura objetivo §43; ADR-017,
+"""Policy-to-Test (prompt maestro de arquitectura objetivo §43; ADR-051,
 Fase C): valida traceability/policy-to-test.yaml.
 
 Mismo estándar que harness/traceability.py: no basta con que el YAML esté
