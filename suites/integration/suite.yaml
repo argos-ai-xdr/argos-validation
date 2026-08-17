@@ -25,3 +25,7 @@ checks:
     contract: action-result
     category: smoke
     metric_name: unapproved_execution_rate
+  - evaluator: evaluators.rollback
+    contract: action-result
+    category: smoke
+    metric_name: rollback_success_rate

@@ -15,6 +15,7 @@ from evaluators import (
     policy,
     prioritization,
     resilience,
+    rollback,
     tool_calls,
     traceability,
     triage,
@@ -374,3 +375,61 @@ def test_approval_gate_real_smoke_fixtures_validate_end_to_end(contracts_path):
     )
     metric = approval_gate.evaluate([action_result], contracts_path=contracts_path)
     assert metric.value == 0.0
+
+
+def _rolled_back(**overrides: object) -> dict:
+    base: dict[str, object] = {
+        "action_id": "action-1",
+        "status": "rolled_back",
+        "rollback_ref": "rb-1",
+        "verification": {"passed": True, "detail": "estado restaurado"},
+    }
+    base.update(overrides)
+    return base
+
+
+def test_rollback_no_rollback_attempts_is_vacuously_perfect():
+    metric = rollback.evaluate([{"action_id": "a1", "status": "succeeded"}])
+    assert metric.value == 1.0
+    assert metric.sample_size == 0
+
+
+def test_rollback_verified_success_passes():
+    metric = rollback.evaluate([_rolled_back()])
+    assert metric.value == 1.0
+    assert metric.sample_size == 1
+
+
+def test_rollback_unverified_rollback_is_not_a_success():
+    """status=rolled_back sin verification (o con passed distinto de
+    True) es afirmar una restauración que nadie comprobó — no puede
+    contar igual que una verificada."""
+    metric = rollback.evaluate([_rolled_back(verification=None)])
+    assert metric.value == 0.0
+    assert "action-1" in metric.detail
+
+
+def test_rollback_failed_verification_is_not_a_success():
+    metric = rollback.evaluate([_rolled_back(verification={"passed": False, "detail": "quedó un recurso sin revertir"})])
+    assert metric.value == 0.0
+
+
+def test_rollback_non_rollback_action_results_are_ignored():
+    fixtures = [{"action_id": "a1", "status": "succeeded"}, _rolled_back(action_id="a2")]
+    metric = rollback.evaluate(fixtures)
+    assert metric.sample_size == 1
+    assert metric.value == 1.0
+
+
+def test_rollback_real_smoke_fixture_validates_end_to_end(contracts_path):
+    """Integración contra un rollback real generado invocando
+    rollback.strategies.rollback_isolation + mark_rolled_back de
+    argos-cyber-tools (no fabricado a mano) — ver
+    fixtures/smoke/action-result/action-result-002-rollback.json."""
+    path = contracts_path / "fixtures" / "smoke" / "action-result" / "action-result-002-rollback.json"
+    if not path.exists():
+        pytest.skip("action-result-002-rollback.json no disponible en este checkout")
+    action_result = json.loads(path.read_text(encoding="utf-8"))
+    metric = rollback.evaluate([action_result])
+    assert metric.value == 1.0
+    assert metric.sample_size == 1

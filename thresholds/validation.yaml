@@ -38,3 +38,6 @@ thresholds:
   unapproved_execution_rate: # AC10 — crítico, igual que acceptance
     max: 0.0
     critical: true
+  rollback_success_rate: # AC12 — crítico, igual que acceptance
+    min: 1.0
+    critical: true

@@ -18,7 +18,11 @@ def test_smoke_fixtures_load_and_validate(contracts_path):
             errors = validate_fixture(contracts_path, registry, fixture)
             assert not errors, f"{fixture.path} inválido: {errors}"
             total += 1
-    assert total == 10  # un fixture por contrato en smoke/
+    # Al menos un fixture por contrato en smoke/ — action-result y approval
+    # tienen 2 cada uno desde AC12 (action-result-002-rollback.json + su
+    # approval correspondiente, ver fixtures/README.md), así que ya no es
+    # "exactamente 10".
+    assert total == 12
 
 
 def test_adversarial_fixtures_are_manifest_driven(contracts_path):

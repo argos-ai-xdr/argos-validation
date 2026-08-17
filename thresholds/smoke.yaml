@@ -36,3 +36,6 @@ thresholds:
   unapproved_execution_rate:
     max: 1.0
     critical: false
+  rollback_success_rate:
+    min: 0.0
+    critical: false

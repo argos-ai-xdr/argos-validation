@@ -185,9 +185,12 @@ entries:
       - idempotency_violation_rate  # AC13
       - adversarial_block_rate  # AC05 / AC11
       - unapproved_execution_rate  # AC10 (corrige nota anterior que citaba adversarial_block_rate para AC10, era incorrecta)
+      - rollback_success_rate  # AC12
     evidence_refs:
       - argos-core/models/deterministic-fallback/runbook.yaml
       - argos-validation/evaluators/approval_gate/__init__.py
+      - argos-validation/evaluators/rollback/__init__.py
+      - argos-contracts-scenarios/fixtures/smoke/action-result/action-result-002-rollback.json
     gate_id: G5
     status: PASS
     notes: >
@@ -202,7 +205,13 @@ entries:
       había forzado una comprobación de completitud AC01-AC14). Cerrado
       con evaluators/approval_gate: trata approval caducada, de rol
       inválido o rechazada exactamente como "sin aprobación", no como
-      aprobación parcial.
+      aprobación parcial. AC12 (rollback success=1.00) tenía el mismo
+      gap — cerrado con evaluators/rollback contra un ActionResult
+      status=rolled_back real, generado invocando
+      rollback.strategies.rollback_isolation + mark_rolled_back de
+      argos-cyber-tools (el mismo código que
+      tests/rollback/test_rollback_cycle.py ejercita), no fabricado a
+      mano.
 
   - uc_id: G6
     sprint: S7

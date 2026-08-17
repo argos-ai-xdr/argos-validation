@@ -19,6 +19,7 @@ El árbol de carpetas original (documento de bootstrap) usaba guiones (`tool-cal
 | [`drift/`](drift/) | ARG-010 | `AssetSnapshot` agrupados por `asset_id`: drift as-designed/as-built cuya criticidad no se puede confirmar (campo ausente) |
 | [`inventory_coverage/`](inventory_coverage/) | AC02 | Cobertura de `asset_id` vs. `expected_assets` (ground-truth/manifests/); activos críticos omitidos siempre visibles en `detail`, **lanza `NotImplementedError`** sin ground truth |
 | [`approval_gate/`](approval_gate/) | AC10 | `ActionResult` con `dry_run=false` sin una `Approval` válida (rol/decision/caducidad) asociada por `action_id`; sin `contracts_path` cuenta como violación, no como PASS por defecto |
+| [`rollback/`](rollback/) | AC12 | `ActionResult` con `status=rolled_back`: cuenta como éxito solo si `verification.passed=true`, nunca solo por llevar el status |
 | [`human_agreement/`](human_agreement/) | — (umbral provisional) | Acuerdo juez-humano; **lanza `NotImplementedError`** si no se le pasan etiquetas reales — no inventa un número |
 
 `prioritization` y `human_agreement` documentan explícitamente qué parte de su AC no es computable todavía sin datos que no existen en ningún fixture (S1-S2 los generará). Ningún evaluador de esta lista fabrica un valor plausible para una entrada que no puede evaluar de verdad.
