@@ -298,6 +298,8 @@ entries:
       - argos-control/releases/0.1.0-dev/as-built.md
       - argos-control/releases/0.1.0-dev/release-manifest.yaml
       - argos-smartops/docs/operator-package.md
+      - argos-smartops/docs/soc-handover-package.md
+      - argos-smartops/api/handover.py
     gate_id: G7
     status: BLOCKED
     notes: >
@@ -343,9 +345,19 @@ entries:
       queda documentado como explícitamente FUERA de alcance de este
       MVP (Anexo G.17 del documento, quality gate ST-17, reservado a
       v0.6.26 — "SPECIFIED/PREPARED - NOT EXECUTED"), no un gap
-      silenciado. Siguen faltando 6 de los 8 paquetes de ARG-028
-      (Release/restore, Operación XDR, Cyber-range, SOC handover,
-      Gobierno, Formación — todos exigen infraestructura real o
-      participación humana que no existe) y runbooks para el resto del
-      tool_catalog. Depende de G6, que también está PARTIAL — G7 se
-      queda correctamente BLOCKED, no se fuerza un PASS prematuro.
+      silenciado. El paquete "SOC handover" (3 de 8) también está
+      escrito: argos-smartops/docs/soc-handover-package.md — TLP/
+      redacción/mapping ya reales en argos-core/services/soc_adapter,
+      ACK/retry/dedupe-por-ID reales, y CIERRE nuevo esta sesión
+      (`POST /handover/{case_id}/close`, exige que el export más
+      reciente esté acked, repositorio propio `case_closures`, probado
+      con 7 tests nuevos). "Escalado" y el dedupe SEMÁNTICO (no por ID)
+      quedan como gaps honestos — sin ninguna definición operativa de
+      "escalar un caso" en ningún artefacto del repo, inventarla habría
+      sido tomar una decisión de diseño sin contexto para hacerlo bien.
+      Siguen faltando 5 de los 8 paquetes de ARG-028 (Release/restore,
+      Operación XDR, Cyber-range, Gobierno, Formación — todos exigen
+      infraestructura real o participación humana que no existe) y
+      runbooks para el resto del tool_catalog. Depende de G6, que
+      también está PARTIAL — G7 se queda correctamente BLOCKED, no se
+      fuerza un PASS prematuro.
