@@ -198,28 +198,37 @@ entries:
       - argos-validation/suites/adversarial/suite.yaml
       - argos-smartops/tests/e2e/test_full_flow.py
       - argos-validation/tests/test_evidence_panel.py
+      - argos-validation/tests/test_checkpoints.py
+      - argos-contracts-scenarios/scenarios/ARGOS-CYB-01/checkpoints/checkpoints.yaml
+      - argos-contracts-scenarios/scenarios/ARGOS-CYB-01/expected/sample-run
     metric_ids:
       - adversarial_block_rate  # AC05 / AC11 (F09)
     evidence_refs:
       - argos-validation/harness/reporters/evidence_panel.py
+      - argos-validation/harness/checkpoints.py
     gate_id: G6
     status: PARTIAL
     notes: >
       ARG-024 (F09 adversarial + regresión) construido y probado.
       ARG-026 (evidence store/dashboards/paquete firmado, P1 pero
       confirmado prioritario) ya tiene su slice P0 real: el evidence
-      manifest (harness/evidence/manifest.py) y ahora el panel operativo
-      mínimo (harness/reporters/evidence_panel.py — índice HTML offline
-      por run/CP/AC, estado, métricas, decisiones, hashes y enlaces a
-      artefactos, sin analítica avanzada; la reconstrucción offline del
-      evidence pack no depende de su disponibilidad, propuesta v0.6.25.4,
-      §15.16). Gaps reales que SIGUEN abiertos, no ocultos: ARG-023
-      (checkpoints CP00-CP13 como artefacto integrado end-to-end) solo
-      existe hoy como mención en sprint-definitions/S7.md, sin
-      implementación; ARG-025 (backup/restore de OpenSearch/Ceph RGW) no
-      tiene NINGÚN script en argos-platform (tests/recovery/README.md
-      documenta la intención, cero código). G6 no puede declararse PASS
-      con estos dos gaps abiertos.
+      manifest (harness/evidence/manifest.py) y el panel operativo mínimo
+      (harness/reporters/evidence_panel.py). ARG-023 (integración
+      CP00-CP13 y trazabilidad end-to-end) ya tiene un validador real
+      (harness/checkpoints.py) que exige un único run_id coherente en
+      todos los checkpoints con contrato v1 — probado contra un sample-run
+      real ensamblado desde fixtures/smoke/: los 9 checkpoints respaldados
+      por contrato (CP02/03/06/07/08/09/10/11/13) validan end-to-end con
+      run_id=run-smoke-001 compartido. Gap real que SIGUE abierto, no
+      oculto: CP00/01/04/05/12 (sin contrato v1, artefactos internos:
+      baseline_manifest, deployment_log, risk_ranking, attack_path,
+      verification) no tienen todavía el código que los capture como
+      archivo — el propio sample-run los deja ausentes a propósito para
+      que el validador los reporte como faltantes, no como resuelto.
+      ARG-025 (backup/restore de OpenSearch/Ceph RGW) sigue sin NINGÚN
+      script en argos-platform (tests/recovery/README.md documenta la
+      intención, cero código). G6 no puede declararse PASS con estos dos
+      gaps abiertos.
 
   - uc_id: G7
     sprint: S8
