@@ -3,6 +3,7 @@ from __future__ import annotations
 import pathlib
 
 import yaml
+
 from chaos import ChaosExperimentRequest, ChaosSafetyGuard
 
 _CATALOG_PATH = pathlib.Path(__file__).resolve().parents[1] / "chaos" / "scenarios" / "catalog.yaml"
@@ -13,14 +14,14 @@ def _load_catalog() -> list[dict]:
     return data["scenarios"]
 
 
-def test_catalog_has_twenty_scenarios():
-    assert len(_load_catalog()) == 20
+def test_catalog_has_thirty_two_scenarios():
+    assert len(_load_catalog()) == 32
 
 
 def test_all_experiment_ids_are_unique_and_sequential():
     ids = [s["experiment_id"] for s in _load_catalog()]
     assert len(ids) == len(set(ids))
-    assert ids == [f"CHAOS-{i:02d}" for i in range(1, 21)]
+    assert ids == [f"CHAOS-{i:02d}" for i in range(1, 33)]
 
 
 def test_every_scenario_passes_the_safety_guard_structural_check():

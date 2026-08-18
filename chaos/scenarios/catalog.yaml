@@ -280,3 +280,167 @@ scenarios:
     quality_gates: [CH-06, CH-08]
     status: TESTED_LOCALLY
     test_ref: "argos-core/tests/unit/test_correlator.py::test_chaos_20_dedup_survives_restart_mid_sequence"
+
+  # ---------------------------------------------------------------------
+  # CHAOS-21..32: extensión del catálogo (ADR-069, Detection Engineering
+  # Loop) -- Kafka, OpenSearch, Investigator, generación de reglas Wazuh,
+  # backtesting y el bucle de feedback SOC.
+  # ---------------------------------------------------------------------
+
+  - experiment_id: CHAOS-21
+    category: bus
+    component: kafka
+    hypothesis: "Kafka no disponible degrada explícitamente el bucle de investigación sin perder eventos ya persistidos en Wazuh"
+    target: "statefulset/kafka (namespace argos-kafka)"
+    expected_steady_state: "Ningún WeakSignal se pierde de forma silenciosa -- Wazuh sigue escribiendo a OpenSearch (flujo soportado, ADR-069) pese a la caída de Kafka"
+    blast_radius: "1 componente, namespace argos-kafka"
+    duration_seconds: 120
+    abort_conditions: ["silent_signal_loss", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart statefulset/kafka"
+    quality_gates: [CH-08, CH-11]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-22
+    category: bus
+    component: kafka
+    hypothesis: "Una entrega duplicada de Kafka con el mismo event_id produce 1 sola investigación, no N"
+    target: "argos.investigation.trigger.v1 (topic)"
+    expected_steady_state: "investigation_id es idempotente por event_id -- redelivery no crea una segunda GlobalInvestigationRequest"
+    blast_radius: "1 proceso, argos-investigator"
+    duration_seconds: 30
+    abort_conditions: ["duplicate_investigation_created", "manual_abort"]
+    recovery_procedure: "n/a -- redelivery es simulada, no requiere recuperación de infraestructura"
+    quality_gates: [CH-06]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-23
+    category: bus
+    component: kafka
+    hypothesis: "Un reinicio del consumer group del Investigator reanuda desde el último offset comprometido sin reprocesar en bucle"
+    target: "deployment/argos-investigator"
+    expected_steady_state: "El consumer group reanuda desde offset comprometido; ningún mensaje se reprocesa infinitamente"
+    blast_radius: "1 pod, namespace argos-ai"
+    duration_seconds: 60
+    abort_conditions: ["infinite_reprocessing_loop", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/argos-investigator"
+    quality_gates: [CH-06]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-24
+    category: memory
+    component: opensearch
+    hypothesis: "OpenSearch no disponible produce INSUFFICIENT_EVIDENCE, nunca una conclusión fabricada por ausencia de datos"
+    target: "statefulset/opensearch (namespace argos-observability)"
+    expected_steady_state: "ThreatAssessment.conclusion=INSUFFICIENT_EVIDENCE cuando L1+ requiere OpenSearch y no responde -- nunca BENIGN/CONFIRMED_PATTERN sin datos"
+    blast_radius: "1 componente, namespace argos-observability"
+    duration_seconds: 120
+    abort_conditions: ["conclusion_without_evidence", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart statefulset/opensearch"
+    quality_gates: [CH-11]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-25
+    category: memory
+    component: opensearch
+    hypothesis: "Una respuesta obsoleta (stale) de OpenSearch se detecta y se marca como tal, no se trata como histórico fresco"
+    target: "statefulset/opensearch (namespace argos-observability)"
+    expected_steady_state: "El investigador marca explícitamente el contexto como STALE en su ThreatAssessment, nunca lo trata como equivalente a datos actuales"
+    blast_radius: "1 componente, namespace argos-observability"
+    duration_seconds: 90
+    abort_conditions: ["stale_data_treated_as_fresh", "manual_abort"]
+    recovery_procedure: "eliminar NetworkChaos (latencia/stale)"
+    quality_gates: [CH-11]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-26
+    category: control-plane
+    component: investigator
+    hypothesis: "Un reinicio del Investigator a mitad de una investigación L0-L5 no produce un ThreatAssessment corrupto ni parcial afirmado como completo"
+    target: "deployment/argos-investigator"
+    expected_steady_state: "Tras reanudar, la investigación se retoma o se relanza desde L0 -- nunca se emite un ThreatAssessment con evidence_refs incompleto presentado como final"
+    blast_radius: "1 pod, namespace argos-ai"
+    duration_seconds: 60
+    abort_conditions: ["partial_assessment_presented_as_final", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/argos-investigator"
+    quality_gates: [CH-08]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-27
+    category: rule-engineering
+    component: rule-engineering-compiler
+    hypothesis: "Un WazuhRuleSpec malformado (generado por IA) nunca produce XML aplicado -- rechazo determinista antes de compilar"
+    target: "rule_engineering.compile_rule_spec_to_xml (argos-core)"
+    expected_steady_state: "Un WazuhRuleSpec que falla la validación de schema o el rango de rule_id se rechaza con InvalidRuleId/error de validación, nunca compila XML parcial"
+    blast_radius: "1 proceso, argos-core"
+    duration_seconds: 30
+    abort_conditions: ["malformed_spec_compiled", "manual_abort"]
+    recovery_procedure: "n/a -- función pura, sin estado que recuperar"
+    quality_gates: [CH-03]
+    status: TESTED_LOCALLY
+    test_ref: "argos-core/tests/unit/test_rule_engineering.py::test_compile_rejects_rule_id_outside_reserved_range"
+
+  - experiment_id: CHAOS-28
+    category: rule-engineering
+    component: wazuh-logtest
+    hypothesis: "wazuh-logtest no disponible bloquea el avance de la RuleCandidate en el pipeline -- nunca se salta la validación de sintaxis"
+    target: "wazuh-logtest (binario real, no integrado todavía)"
+    expected_steady_state: "Sin respuesta de wazuh-logtest, la RuleCandidate queda en estado PENDING_SYNTAX_CHECK, nunca avanza a backtest/SOC"
+    blast_radius: "1 componente"
+    duration_seconds: 60
+    abort_conditions: ["candidate_skipped_syntax_check", "manual_abort"]
+    recovery_procedure: "reintentar cuando wazuh-logtest responda"
+    quality_gates: [CH-03]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-29
+    category: rule-engineering
+    component: backtest
+    hypothesis: "Backtest no disponible (OpenSearch histórico inalcanzable) bloquea la generación/promoción automática de la regla"
+    target: "rule_engineering.backtest.run_backtest (argos-core)"
+    expected_steady_state: "RuleDeploymentGate.authorize_deployment deniega por backtest_result=None -- ninguna regla avanza sin backtesting real"
+    blast_radius: "1 proceso, argos-core"
+    duration_seconds: 30
+    abort_conditions: ["deployment_authorized_without_backtest", "manual_abort"]
+    recovery_procedure: "n/a -- ya probado como control negativo directo del gate"
+    quality_gates: [CH-03]
+    status: TESTED_LOCALLY
+    test_ref: "argos-core/tests/unit/test_rule_engineering.py::test_deployment_denied_without_backtest_result"
+
+  - experiment_id: CHAOS-30
+    category: rule-engineering
+    component: gitops-deployment
+    hypothesis: "Una interrupción durante el despliegue GitOps de una regla no deja Wazuh en un estado a medias (regla parcialmente escrita)"
+    target: "GitOps pipeline de despliegue de reglas custom (no implementado todavía)"
+    expected_steady_state: "El despliegue es atómico (todo o nada) a nivel de commit/aplicación -- nunca un XML parcial activo en Wazuh"
+    blast_radius: "1 pipeline"
+    duration_seconds: 60
+    abort_conditions: ["partial_rule_active", "manual_abort"]
+    recovery_procedure: "revertir el commit GitOps del despliegue interrumpido"
+    quality_gates: [CH-06]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-31
+    category: rule-engineering
+    component: deployed-rule
+    hypothesis: "Una regla desplegada que empieza a generar una tormenta de alertas se detecta y se puede degradar/desactivar sin esperar a un ciclo de release completo"
+    target: "regla custom activa en Wazuh (post-canary)"
+    expected_steady_state: "alerts/hour observado excede el umbral estimado en backtest -> alerta operacional + camino de desactivación rápida disponible"
+    blast_radius: "1 regla, namespace argos-xdr"
+    duration_seconds: 300
+    abort_conditions: ["alert_storm_unmitigated_beyond_threshold", "manual_abort"]
+    recovery_procedure: "desactivar/rebajar la regla vía overwrite gobernado (ver correo XDR/Wazuh, ADR-069)"
+    quality_gates: [CH-05, CH-11]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-32
+    category: knowledge-loop
+    component: feedback
+    hypothesis: "Feedback SOC incorrecto o adversarial repetido no se promueve automáticamente a KnowledgeArtifact autoritativo sin revisión"
+    target: "SOC feedback/knowledge loop (ADR-069 §11, no implementado todavía)"
+    expected_steady_state: "feedback != automatic learning; knowledge generated != authoritative knowledge -- solo contenido revisado/promovido explícitamente se vuelve conocimiento persistente"
+    blast_radius: "1 proceso, knowledge loop"
+    duration_seconds: 60
+    abort_conditions: ["unreviewed_feedback_promoted_to_authoritative", "manual_abort"]
+    recovery_procedure: "n/a -- invariante de diseño, no un componente con estado que reiniciar"
+    quality_gates: [CH-12]
+    status: DESIGNED
