@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/argos-ai-xdr/argos-validation/ground-truth/schemas/detection-ground-truth-manifest.schema.json",
+  "title": "Detection ground truth manifest (IDLAB-06, ADR-070)",
+  "description": "Etiquetas ATTACK/BENIGN por (scenario_id, host_id) con split train/test explícito -- NUNCA aleatorio por fila (DE-27). Formato local de este harness. `records` alimenta directamente evaluators.dataset_integrity.evaluate vía harness.loaders.detection_ground_truth.split_records_for_dataset_integrity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dataset_id", "records"],
+  "properties": {
+    "dataset_id": { "type": "string" },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scenario_id", "host_id", "label", "source_mode", "split"],
+        "properties": {
+          "scenario_id": { "type": "string" },
+          "host_id": { "type": "string" },
+          "label": { "type": "string", "enum": ["ATTACK", "BENIGN"] },
+          "source_mode": {
+            "type": "string",
+            "enum": ["REAL", "SYNTHETIC"],
+            "description": "Nunca CANDIDATE -- ground truth es telemetría de entrada etiquetada por un humano, no un artefacto generado por ARGOS."
+          },
+          "split": {
+            "type": "string",
+            "enum": ["train", "test"],
+            "description": "Asignado por escenario/host en el momento de crear el manifiesto -- NUNCA recalculado por fila al azar (DE-27)."
+          },
+          "weak_signal_refs": { "type": "array", "items": { "type": "string" } },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

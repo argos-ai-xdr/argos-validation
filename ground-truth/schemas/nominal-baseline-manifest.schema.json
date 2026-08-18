@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/argos-ai-xdr/argos-validation/ground-truth/schemas/nominal-baseline-manifest.schema.json",
+  "title": "Nominal baseline manifest (IDLAB-05, ADR-070)",
+  "description": "Metadatos de una captura de telemetría 'normal' (sin ataques conocidos) usada como referencia antes de inyectar ataques/caos (IDLAB-04). Formato local de este harness -- no es un contrato cross-repo de argos-contracts-scenarios (mismo criterio que expected-event-ids/human-labels). Consumido por harness.loaders.detection_ground_truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["baseline_id", "capture_window", "hosts", "source_mode", "known_attacks_present"],
+  "properties": {
+    "baseline_id": { "type": "string" },
+    "capture_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "string", "format": "date-time" },
+        "end": { "type": "string", "format": "date-time" }
+      }
+    },
+    "hosts": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "source_mode": {
+      "type": "string",
+      "enum": ["REAL", "SYNTHETIC"],
+      "description": "Nunca CANDIDATE -- un baseline nominal es telemetría de entrada, no un artefacto generado por ARGOS (DE-20/DE-29)."
+    },
+    "event_count": { "type": ["integer", "null"], "minimum": 0 },
+    "known_attacks_present": {
+      "const": false,
+      "description": "Impuesto por schema, no solo por convención: un baseline con ataques conocidos ya no es nominal -- si aparece uno, el manifiesto se reclasifica bajo IDLAB-06, no aquí."
+    },
+    "notes": { "type": "string" }
+  }
+}

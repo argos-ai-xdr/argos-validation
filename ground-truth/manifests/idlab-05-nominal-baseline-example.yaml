@@ -1,0 +1,22 @@
+# EJEMPLO de formato IDLAB-05 (ADR-070) -- NO es una captura real.
+# Ningún laboratorio OpenNebula/Wazuh real existe todavía
+# (BLOCKED_EXTERNAL, ver ground-truth/README.md). Este manifiesto
+# demuestra que el schema y el loader funcionan de verdad
+# (harness.loaders.detection_ground_truth.load_nominal_baseline_manifest),
+# no afirma telemetría nominal real.
+baseline_id: idlab-05-example-001
+capture_window:
+  start: "2026-08-18T00:00:00Z"
+  end: "2026-08-18T06:00:00Z"
+hosts:
+  - idlab-host-1
+  - idlab-host-2
+  - idlab-host-3
+source_mode: SYNTHETIC
+event_count: null
+known_attacks_present: false
+notes: >-
+  Placeholder de formato -- sustituir por una captura real de IDLAB-05
+  (LAB-K8S o LAB-VM, ver ground-truth/README.md) cuando el laboratorio
+  exista. event_count=null porque no hay eventos reales que contar
+  todavía.

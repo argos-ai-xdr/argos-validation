@@ -1,0 +1,13 @@
+# EJEMPLO de formato IDLAB-06 (ADR-070) -- NO son etiquetas reales de un
+# SOC. Ningún laboratorio real existe todavía (BLOCKED_EXTERNAL, ver
+# ground-truth/README.md). Demuestra el formato Y la separación
+# train/test por (scenario_id, host_id) -- no por fila al azar (DE-27):
+# obsérvese que S1/S2 aparecen SOLO en train (todos sus hosts) y S3/S4
+# SOLO en test -- ningún (scenario_id, host_id) se repite entre ambos.
+dataset_id: idlab-06-example-001
+records:
+  - {scenario_id: S1, host_id: idlab-host-1, label: ATTACK, source_mode: SYNTHETIC, split: train, weak_signal_refs: []}
+  - {scenario_id: S1, host_id: idlab-host-2, label: ATTACK, source_mode: SYNTHETIC, split: train, weak_signal_refs: []}
+  - {scenario_id: S2, host_id: idlab-host-1, label: BENIGN, source_mode: SYNTHETIC, split: train, weak_signal_refs: []}
+  - {scenario_id: S3, host_id: idlab-host-3, label: ATTACK, source_mode: SYNTHETIC, split: test, weak_signal_refs: []}
+  - {scenario_id: S4, host_id: idlab-host-3, label: BENIGN, source_mode: SYNTHETIC, split: test, weak_signal_refs: []}
