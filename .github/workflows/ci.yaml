@@ -11,4 +11,5 @@ jobs:
     with:
       working-directory: "."
       contracts-ref: "main"
+      control-ref: "main"
     secrets: inherit

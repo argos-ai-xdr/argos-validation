@@ -5,8 +5,9 @@ otros 6 repos hermanos:
 
   - uc_id/gate_id sin duplicados.
   - story_ids referencian IDs reales de
-    argos-control/project/backlog/backlog.yaml (si el checkout hermano
-    está disponible; si no, ese check se marca SKIPPED explícitamente en
+    argos-control/project/backlog/backlog.yaml (localizado vía
+    ARGOS_CONTROL_PATH o como hermano, ver harness/loaders/control_path.py;
+    si no está disponible, ese check se marca SKIPPED explícitamente en
     vez de fingir que pasó).
   - contract_ids referencian contratos reales (schemas/*/v1.schema.json de
     argos-contracts-scenarios) o están vacíos.
@@ -29,6 +30,8 @@ import dataclasses
 import pathlib
 
 import yaml
+
+from harness.loaders.control_path import resolve_control_path
 
 _KNOWN_STATUSES = frozenset({"PASS", "PARTIAL", "BLOCKED"})
 
@@ -67,7 +70,10 @@ def load_traceability(path: pathlib.Path) -> dict:
 
 
 def _load_backlog(org_root: pathlib.Path) -> list[dict] | None:
-    backlog_path = org_root / "argos-control" / "project" / "backlog" / "backlog.yaml"
+    control_path = resolve_control_path(fallback=org_root / "argos-control")
+    if control_path is None:
+        return None
+    backlog_path = control_path / "project" / "backlog" / "backlog.yaml"
     if not backlog_path.exists():
         return None
     data = yaml.safe_load(backlog_path.read_text(encoding="utf-8")) or {}
