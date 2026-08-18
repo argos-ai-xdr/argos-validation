@@ -7,6 +7,7 @@ import pytest
 
 from evaluators import (
     approval_gate,
+    dataset_integrity,
     detection,
     drift,
     hallucination,
@@ -433,3 +434,47 @@ def test_rollback_real_smoke_fixture_validates_end_to_end(contracts_path):
     metric = rollback.evaluate([action_result])
     assert metric.value == 1.0
     assert metric.sample_size == 1
+
+
+# ---------------------------------------------------------------------------
+# dataset_integrity (DE-27, ADR-070): sin fuga de (scenario_id, host_id)
+# entre train/test del detector estadístico.
+# ---------------------------------------------------------------------------
+
+
+def test_dataset_integrity_no_leakage_is_zero():
+    train = [{"scenario_id": "S1", "host_id": "h1"}, {"scenario_id": "S2", "host_id": "h1"}]
+    test = [{"scenario_id": "S3", "host_id": "h1"}, {"scenario_id": "S1", "host_id": "h2"}]
+    metric = dataset_integrity.evaluate(train, test)
+    assert metric.value == 0.0
+
+
+def test_dataset_integrity_detects_same_scenario_and_host_in_both_sets():
+    train = [{"scenario_id": "S1", "host_id": "h1"}]
+    test = [{"scenario_id": "S1", "host_id": "h1"}]  # MISMO ataque, MISMO host, en ambos conjuntos
+    metric = dataset_integrity.evaluate(train, test)
+    assert metric.value == 1.0
+    assert "S1" in metric.detail and "h1" in metric.detail
+
+
+def test_dataset_integrity_same_scenario_different_host_is_not_leakage():
+    """El mismo escenario de ataque sobre un host DISTINTO en train/test
+    no es fuga -- es exactamente la generalización que se quiere medir."""
+    train = [{"scenario_id": "S1", "host_id": "h1"}]
+    test = [{"scenario_id": "S1", "host_id": "h2"}]
+    metric = dataset_integrity.evaluate(train, test)
+    assert metric.value == 0.0
+
+
+def test_dataset_integrity_partial_leakage_is_fractional():
+    train = [{"scenario_id": "S1", "host_id": "h1"}, {"scenario_id": "S2", "host_id": "h1"}]
+    test = [{"scenario_id": "S1", "host_id": "h1"}, {"scenario_id": "S3", "host_id": "h1"}]
+    metric = dataset_integrity.evaluate(train, test)
+    # Combinaciones distintas: (S1,h1) [en ambos], (S2,h1), (S3,h1) = 3 -- 1 filtrada.
+    assert metric.value == pytest.approx(1 / 3)
+
+
+def test_dataset_integrity_empty_sets_is_zero():
+    metric = dataset_integrity.evaluate([], [])
+    assert metric.value == 0.0
+    assert metric.sample_size == 0
