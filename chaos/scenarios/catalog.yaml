@@ -1,0 +1,282 @@
+# Catálogo de escenarios de Chaos Engineering (ADR-068, argos-control).
+# Cada entrada declara los campos obligatorios que exige
+# chaos.ChaosSafetyGuard.authorize (experiment_id, hypothesis, target,
+# expected_steady_state, blast_radius, duration_seconds, abort_conditions,
+# recovery_procedure) más metadatos de catálogo (category, component,
+# quality_gates, status). NINGÚN escenario de aquí se ha ejecutado contra
+# un clúster real todavía -- status=DESIGNED para todos salvo los que ya
+# tienen una regresión local ejecutable sin clúster (ver status=TESTED_LOCALLY
+# y su test_ref). No confundir con VALIDATED_IN_TARGET (requiere clúster
+# real, BLOCKED_EXTERNAL hoy, mismo bloqueo que ARG-021/Shuffle).
+
+schema_version: 1
+adr_ref: ADR-068
+
+scenarios:
+  - experiment_id: CHAOS-01
+    category: control-plane
+    component: argos-core
+    hypothesis: "Un pod de argos-core puede matarse sin corrupción de estado ni pérdida de eventos en vuelo"
+    target: "deployment/argos-core"
+    expected_steady_state: "El pipeline normalizer->correlator sigue produciendo Incident v1 dentro de 30s tras el kill"
+    blast_radius: "1 pod, namespace argos-cyber-range"
+    duration_seconds: 60
+    abort_conditions: ["error_rate>0.5", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/argos-core"
+    quality_gates: [CH-05, CH-06]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-02
+    category: control-plane
+    component: correlator
+    hypothesis: "El correlador se reanuda sin duplicar Incident tras un kill a mitad de agrupación"
+    target: "deployment/argos-core (proceso correlator)"
+    expected_steady_state: "Ningún Incident duplicado (mismo member_event_ids) tras la reanudación"
+    blast_radius: "1 pod, namespace argos-cyber-range"
+    duration_seconds: 60
+    abort_conditions: ["duplicate_incident_detected", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/argos-core"
+    quality_gates: [CH-06]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-03
+    category: sensor-loss
+    component: wazuh
+    hypothesis: "La caída de Wazuh se refleja como degradación explícita, nunca como telemetría inventada"
+    target: "statefulset/wazuh-manager (namespace argos-xdr)"
+    expected_steady_state: "ARGOS reporta sensor_status=DEGRADED, cero SecurityEvent fabricados"
+    blast_radius: "1 componente, namespace argos-xdr"
+    duration_seconds: 120
+    abort_conditions: ["fabricated_event_detected", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart statefulset/wazuh-manager"
+    quality_gates: [CH-11]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-04
+    category: sensor-loss
+    component: falco
+    hypothesis: "La caída de Falco es visible como pérdida de sensor, no como silencio indistinguible de 'sin actividad'"
+    target: "daemonset/falco"
+    expected_steady_state: "sensor_status=DEGRADED visible en dashboard/alerting, no falso negativo silencioso"
+    blast_radius: "N pods (daemonset), namespace kube-system"
+    duration_seconds: 120
+    abort_conditions: ["manual_abort"]
+    recovery_procedure: "kubectl rollout restart daemonset/falco"
+    quality_gates: [CH-11]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-05
+    category: bus
+    component: nats
+    hypothesis: "La caída de NATS activa retry/backpressure sin pérdida silenciosa de mensajes"
+    target: "statefulset/nats (namespace argos-observability)"
+    expected_steady_state: "Ningún mensaje se pierde sin quedar registrado como reintento fallido"
+    blast_radius: "1 componente, namespace argos-observability"
+    duration_seconds: 90
+    abort_conditions: ["silent_message_loss", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart statefulset/nats"
+    quality_gates: [CH-08]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-06
+    category: bus
+    component: nats
+    hypothesis: "La latencia inyectada en NATS respeta el SLO con timeout seguro, no bloqueo indefinido"
+    target: "statefulset/nats (namespace argos-observability)"
+    expected_steady_state: "P99 dentro del SLO declarado o timeout explícito, nunca cuelgue indefinido"
+    blast_radius: "1 componente, namespace argos-observability"
+    duration_seconds: 90
+    abort_conditions: ["indefinite_hang", "manual_abort"]
+    recovery_procedure: "eliminar NetworkChaos (latencia)"
+    quality_gates: [CH-05]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-07
+    category: network
+    component: cyber-range
+    hypothesis: "Una partición de red se detecta como componente aislado, no como fallo ambiguo"
+    target: "namespace argos-cyber-range (NetworkChaos partition)"
+    expected_steady_state: "ARGOS marca explícitamente el componente aislado, no lo trata como sano"
+    blast_radius: "1 namespace, argos-cyber-range"
+    duration_seconds: 120
+    abort_conditions: ["ambiguous_health_reported", "manual_abort"]
+    recovery_procedure: "eliminar NetworkChaos (partition)"
+    quality_gates: [CH-11]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-08
+    category: safety-chain
+    component: opa
+    hypothesis: "OPA no disponible produce fail-closed, nunca fail-open"
+    target: "deployment/opa (namespace argos-policy)"
+    expected_steady_state: "Toda solicitud de policy decision es DENY mientras OPA está caído"
+    blast_radius: "1 componente, namespace argos-policy"
+    duration_seconds: 60
+    abort_conditions: ["fail_open_detected", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/opa"
+    quality_gates: [CH-03]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-09
+    category: safety-chain
+    component: approval-service
+    hypothesis: "El servicio de Approval no disponible produce zero execute, nunca autorización implícita"
+    target: "deployment/argos-smartops (namespace argos-smartops)"
+    expected_steady_state: "executor_call_count=0 mientras el servicio de Approval está caído"
+    blast_radius: "1 componente, namespace argos-smartops"
+    duration_seconds: 60
+    abort_conditions: ["executor_invoked_without_approval", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/argos-smartops"
+    quality_gates: [CH-04]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-10
+    category: safety-chain
+    component: independent-verifier
+    hypothesis: "Independent Verifier no disponible produce zero execute (ADR-055, mismo criterio que INCONCLUSIVE/REJECTED)"
+    target: "servicio independent_verifier (argos-core)"
+    expected_steady_state: "executor_call_count=0 mientras el verifier no responde"
+    blast_radius: "1 componente, namespace argos-ai"
+    duration_seconds: 60
+    abort_conditions: ["executor_invoked_without_verification", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/argos-core"
+    quality_gates: [CH-04]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-11
+    category: safety-chain
+    component: safety-kernel
+    hypothesis: "Safety Kernel no disponible produce zero execute -- sin SafetyEnvelope no hay execute posible (R0-01)"
+    target: "servicio safety_kernel (argos-core)"
+    expected_steady_state: "executor_call_count=0 mientras el Safety Kernel no responde"
+    blast_radius: "1 componente, namespace argos-ai"
+    duration_seconds: 60
+    abort_conditions: ["executor_invoked_without_safety_envelope", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/argos-core"
+    quality_gates: [CH-04]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-12
+    category: evidence
+    component: evidence-writer
+    hypothesis: "Evidence Store no disponible bloquea cualquier side effect que exija evidence_required=true"
+    target: "servicio evidence_writer (argos-core)"
+    expected_steady_state: "Ninguna acción con evidence_required=true se ejecuta sin EvidenceManifest escrito"
+    blast_radius: "1 componente, namespace argos-evidence"
+    duration_seconds: 60
+    abort_conditions: ["side_effect_without_evidence", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/argos-core"
+    quality_gates: [CH-08]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-13
+    category: evidence
+    component: transparency-log
+    hypothesis: "Un fallo del Transparency Log produce degradación/freeze según política declarada, no silencio"
+    target: "servicio evidence_root (argos-core)"
+    expected_steady_state: "Estado explícito DEGRADED/FROZEN, nunca 'como si no hubiera pasado nada'"
+    blast_radius: "1 componente, namespace argos-evidence"
+    duration_seconds: 60
+    abort_conditions: ["silent_log_failure", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/argos-core"
+    quality_gates: [CH-08]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-14
+    category: ai-fallback
+    component: milvus
+    hypothesis: "La caída de Milvus activa el fallback determinista No-RAG sin degradar la autoridad de decisión"
+    target: "statefulset/milvus"
+    expected_steady_state: "Recommendation sigue produciéndose vía fallback determinista, con incertidumbre marcada"
+    blast_radius: "1 componente"
+    duration_seconds: 90
+    abort_conditions: ["recommendation_without_fallback_marker", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart statefulset/milvus"
+    quality_gates: [CH-10]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-15
+    category: ai-fallback
+    component: vllm
+    hypothesis: "La caída del modelo LLM produce investigación degradada sin perder la autoridad de Safety Kernel/OPA/Approval"
+    target: "deployment/vllm"
+    expected_steady_state: "Ninguna autorización se relaja por ausencia de LLM -- solo se degrada la calidad de la investigación"
+    blast_radius: "1 componente"
+    duration_seconds: 90
+    abort_conditions: ["authority_relaxed_without_llm", "manual_abort"]
+    recovery_procedure: "kubectl rollout restart deployment/vllm"
+    quality_gates: [CH-10]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-16
+    category: safety-chain
+    component: mcp-gateway
+    hypothesis: "Un reinicio del MCP Gateway a mitad de flujo no permite reutilización cross-incident (R0-01/R0-01-RESIDUAL); por separado, se comprueba si tampoco permite replay de una Approval ya consumida"
+    target: "mcp_gateway.Gateway (argos-cyber-tools)"
+    expected_steady_state: "Envelope A + Approval A + contexto de Incident B sigue siendo DENY tras el reinicio, executor_call_count=0"
+    blast_radius: "1 proceso, argos-cyber-tools"
+    duration_seconds: 30
+    abort_conditions: ["cross_incident_reuse_accepted", "manual_abort"]
+    recovery_procedure: "reiniciar proceso mcp_gateway (recrea Gateway/ApprovalStore)"
+    quality_gates: [CH-04, CH-07]
+    status: TESTED_LOCALLY
+    test_ref: "argos-cyber-tools/tests/adversarial/test_chaos_16_gateway_restart_r0_01_regression.py"
+    notes: >-
+      Resultado real, no supuesto: CH-04 (cross-incident) = PASS, sobrevive
+      al reinicio. CH-07 (replay de Approval ya consumida) = KNOWN_FAILING,
+      confirmado con un test xfail intencional -- gap real de ARG-020
+      (ApprovalStore en memoria de proceso, sin almacén compartido), no una
+      regresión de R0-01/R0-01-RESIDUAL. Ver ADR-068.
+
+  - experiment_id: CHAOS-17
+    category: executor
+    component: kubernetes-executor
+    hypothesis: "Un executor que cae justo después de execute permite verify/rollback/recovery, no un estado indefinido"
+    target: "executors.KubernetesExecutor (argos-cyber-tools)"
+    expected_steady_state: "Estado final es CONSISTENTE (rollback aplicado o verify confirma el cambio), nunca ambiguo"
+    blast_radius: "1 proceso, argos-cyber-tools"
+    duration_seconds: 30
+    abort_conditions: ["indeterminate_final_state", "manual_abort"]
+    recovery_procedure: "rollback_isolate_kubernetes_workload (executors/rollback)"
+    quality_gates: [CH-06]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-18
+    category: executor
+    component: rollback
+    hypothesis: "Un kill durante el propio rollback produce recuperación o escalado explícito, nunca un estado silenciosamente roto"
+    target: "rollback.strategies (argos-cyber-tools)"
+    expected_steady_state: "Reintento de rollback exitoso, o escalado explícito a intervención humana"
+    blast_radius: "1 proceso, argos-cyber-tools"
+    duration_seconds: 30
+    abort_conditions: ["silent_broken_state", "manual_abort"]
+    recovery_procedure: "reintentar rollback_* manualmente"
+    quality_gates: [CH-06]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-19
+    category: sensor-loss
+    component: wazuh
+    hypothesis: "Latencia extrema de Wazuh no rompe la ventana de correlación temporal del correlador"
+    target: "statefulset/wazuh-manager (namespace argos-xdr)"
+    expected_steady_state: "group_by_asset_and_window sigue agrupando correctamente pese al retraso de llegada"
+    blast_radius: "1 componente, namespace argos-xdr"
+    duration_seconds: 120
+    abort_conditions: ["incident_split_incorrectly", "manual_abort"]
+    recovery_procedure: "eliminar NetworkChaos (latencia)"
+    quality_gates: [CH-05]
+    status: DESIGNED
+
+  - experiment_id: CHAOS-20
+    category: correlation
+    component: correlator
+    hypothesis: "50 eventos Falco de subproceso con la misma correlation_key, más un reinicio del correlador a mitad de la ventana, siguen produciendo 1 único Incident -- ni 50, ni una fusión incorrecta de dos ataques distintos"
+    target: "correlator.dedupe_by_correlation_key (argos-core)"
+    expected_steady_state: "1 Incident con occurrence_count=50 y evidence_refs completo, tras reanudar desde cualquier punto de la secuencia"
+    blast_radius: "1 proceso, argos-core"
+    duration_seconds: 30
+    abort_conditions: ["incident_count_not_equal_1", "cross_attack_merge_detected", "manual_abort"]
+    recovery_procedure: "reiniciar proceso correlator -- dedupe_by_correlation_key es sin estado entre invocaciones, no requiere recuperación de estado"
+    quality_gates: [CH-06, CH-08]
+    status: TESTED_LOCALLY
+    test_ref: "argos-core/tests/unit/test_correlator.py::test_chaos_20_dedup_survives_restart_mid_sequence"

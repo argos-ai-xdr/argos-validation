@@ -20,9 +20,11 @@ def test_smoke_fixtures_load_and_validate(contracts_path):
             total += 1
     # Al menos un fixture por contrato en smoke/ — action-result y approval
     # tienen 2 cada uno desde AC12 (action-result-002-rollback.json + su
-    # approval correspondiente, ver fixtures/README.md), así que ya no es
+    # approval correspondiente, ver fixtures/README.md); security-event
+    # tiene 2 desde 2026-08-18 (falco-wazuh-correlated-001.json, campos
+    # derivados de la correlación Falco/Wazuh, ADR-015/016) — ya no es
     # "exactamente 10".
-    assert total == 12
+    assert total == 13
 
 
 def test_adversarial_fixtures_are_manifest_driven(contracts_path):
