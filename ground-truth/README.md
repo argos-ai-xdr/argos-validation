@@ -39,3 +39,25 @@ La reunión externa que originó `ADR-070` proponía "Fases 1-8" para el laborat
 | `evaluate_baseline_contamination` | `NominalBaselineManifest` cuyo `contamination_check` indica un ataque conocido |
 
 `manifests/idlab-05-nominal-baseline-example.yaml` y `manifests/idlab-06-detection-ground-truth-example.yaml` son EJEMPLOS que demuestran que el formato v2 y el loader funcionan de verdad (probado end-to-end contra las seis dimensiones de DE-27, incluidos controles negativos que SÍ detectan fuga) -- **no son telemetría ni etiquetas reales**. Nada de esto se ha ejecutado contra un laboratorio real todavía (`BLOCKED_EXTERNAL`).
+
+### Freeze (2026-08-19, `ADR-070`)
+
+`schemas/nominal-baseline-manifest.schema.json` y `schemas/detection-ground-truth-manifest.schema.json` quedan `FROZEN`: solo bug fix/security fix. Ninguna ampliación especulativa ("por si acaso") sin un dato real de laboratorio que la justifique -- el siguiente cambio de schema lo motiva una captura real, no una posibilidad teórica.
+
+### Procedimiento para la primera captura real (IDLAB-05), cuando exista laboratorio
+
+No entrenar nada inmediatamente al recibir la primera telemetría real. Orden:
+
+1. Identificar procedencia (qué entorno, qué sesión de laboratorio).
+2. Fijar `environment.topology_ref`/`environment_snapshot_ref`.
+3. Registrar versiones Wazuh/Falco/Cilium (`environment.xdr.*_ref`, `provenance.configuration_hashes`, `provenance.collector_versions`).
+4. Generar el `NominalBaselineManifest v2` (`load_nominal_baseline_manifest` valida contra el schema).
+5. Verificar `dataset.source_mode` = `REAL` (nunca `is_example: true` en una captura real).
+6. Ejecutar `contamination_check` (`known_attack_scan_performed`, `unexpected_attack_markers`).
+7. Ejecutar `DE-27` (`evaluators.dataset_integrity.evaluate_baseline_contamination` + el resto de checks aplicables).
+8. Calcular `records.hash`.
+9. Generar `EvidenceManifest`.
+10. Generar `EvidenceRoot`.
+11. Congelar `BASELINE-01`.
+
+**Si falla la comprobación de contaminación, el baseline se RECHAZA** (`BASELINE REJECTED`) -- nunca se "limpia" y reetiqueta en silencio. Se corrige la captura y se genera otra desde el paso 1. El mismo principio aplica a `IDLAB-06`/`GROUND-TRUTH-01`: `BASELINE-01` + `GROUND-TRUTH-01` → `DATASET-01` → `EvidenceManifest` → `EvidenceRoot` → freeze inmutable -- un cambio material posterior crea `DATASET-02`, nunca reescribe `DATASET-01`. Ver `argos-control/adr/ADR-070-*.md` §11 y `argos-control/architecture/implementation-readiness.md` §16 para el estado de gobernanza completo.
