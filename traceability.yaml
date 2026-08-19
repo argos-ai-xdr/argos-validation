@@ -45,13 +45,19 @@ entries:
     notes: >
       ARG-001/002/003 construidos y probados localmente (namespaces
       Pod Security "restricted", default-deny, kill-switch con el bug de
-      pipefail corregido). El propio criterio de salida de G0 exige "P0 y
-      DoR aprobados" con CI verde: argos-control y argos-platform están en
-      verde, pero argos-validation/argos-core/argos-cyber-tools/argos-smartops
-      siguen bloqueados en GitHub Actions ("workflow was not found" al
-      llamar al reusable workflow de argos-control) — pendiente de lo que
-      el usuario encuentre en la configuración de Actions a nivel de
-      organización. G0 no puede declararse PASS mientras eso siga abierto.
+      pipefail corregido). RESUELTO 2026-08-19: CI 7/7 GREEN en los 7
+      repos (era 4/7 bloqueado, "workflow was not found" al llamar al
+      reusable workflow de argos-control) — visibilidad de
+      argos-control/argos-contracts-scenarios pasada a pública, más dos
+      bugs reales corregidos en el camino (hash de integridad del
+      catálogo no reproducible entre Windows/Linux por CRLF/LF en
+      argos-cyber-tools; TRACE-01 degradando en silencio a aviso en CI
+      por falta de checkout hermano de argos-control, corregido en este
+      mismo repo). G0 sigue sin poder declararse PASS: el resto de su
+      criterio de salida ("owners, accesos, calendario, P0 y DoR
+      aprobados") no está cumplido (owners nombrados, decisión de
+      dotación, calendario M0=14 sep 2026 todavía futuro) — ver
+      argos-control/architecture/implementation-readiness.md §11/§15.
 
   - uc_id: G1
     sprint: S2
@@ -335,8 +341,9 @@ entries:
       cluster real (mismo bloqueo que ENV-QUAL-01). El paquete "As-built"
       de ARG-028 (1 de 8 que exige el documento, §16.7) ya está escrito:
       argos-control/releases/0.1.0-dev/as-built.md — topología real (CI
-      3/7 verde, 4/7 con el mismo bloqueo "workflow was not found" que G0,
-      reverificado contra la API de GitHub Actions), namespaces,
+      7/7 verde desde 2026-08-19, era 3/7 con el bloqueo "workflow was
+      not found" que también afectaba a G0, reverificado run por run
+      contra la API de GitHub Actions), namespaces,
       versiones (ninguna fijada todavía), ADR, interfaces, data flows
       (11/14 checkpoints), tabla completa de modos REAL/EMULADO por
       componente, y 8 desviaciones conocidas sin ocultar ninguna.
