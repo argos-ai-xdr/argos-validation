@@ -31,7 +31,7 @@ import pathlib
 
 import yaml
 
-from harness.loaders.control_path import resolve_control_path
+from harness.loaders.control_path import resolve_control_path_from_env
 
 _KNOWN_STATUSES = frozenset({"PASS", "PARTIAL", "BLOCKED"})
 
@@ -69,11 +69,17 @@ def load_traceability(path: pathlib.Path) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
 
-def _load_backlog(org_root: pathlib.Path) -> list[dict] | None:
-    control_path = resolve_control_path(fallback=org_root / "argos-control")
-    if control_path is None:
-        return None
-    backlog_path = control_path / "project" / "backlog" / "backlog.yaml"
+def _load_backlog(org_root: pathlib.Path, *, allow_env_override: bool) -> list[dict] | None:
+    backlog_path = org_root / "argos-control" / "project" / "backlog" / "backlog.yaml"
+    if not backlog_path.exists() and allow_env_override:
+        # Solo cuando el caller NO fijó org_root explícitamente (ver
+        # validate() más abajo) -- si no, un test que aísla
+        # deliberadamente "sin argos-control disponible" en un tmp_path
+        # se vería silenciosamente pisado por ARGOS_CONTROL_PATH, que en
+        # CI está definida para todo el job, no por test.
+        control_path = resolve_control_path_from_env()
+        if control_path is not None:
+            backlog_path = control_path / "project" / "backlog" / "backlog.yaml"
     if not backlog_path.exists():
         return None
     data = yaml.safe_load(backlog_path.read_text(encoding="utf-8")) or {}
@@ -88,6 +94,7 @@ def _load_contract_ids(org_root: pathlib.Path) -> set[str] | None:
 
 
 def validate(traceability: dict, *, org_root: pathlib.Path | None = None) -> ValidationResult:
+    org_root_was_explicit = org_root is not None
     org_root = org_root or _org_root()
     errors: list[str] = []
     warnings: list[str] = []
@@ -98,7 +105,7 @@ def validate(traceability: dict, *, org_root: pathlib.Path | None = None) -> Val
         errors.append("traceability.yaml no declara ningún entry")
         return ValidationResult(errors=errors, warnings=warnings, p0_blocked_gates=p0_blocked_gates)
 
-    backlog_items = _load_backlog(org_root)
+    backlog_items = _load_backlog(org_root, allow_env_override=not org_root_was_explicit)
     if backlog_items is None:
         warnings.append(
             "argos-control no está disponible como hermano: no se pudo cruzar "

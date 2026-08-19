@@ -1,13 +1,17 @@
-"""Resuelve dónde vive el checkout de argos-control.
+"""Resuelve dónde vive el checkout de argos-control vía la variable de
+entorno ARGOS_CONTROL_PATH (CI: checkout hermano en _control/, ver
+.github/workflows/ci.yaml y
+argos-control/.github/workflows/reusable-python-ci.yaml).
 
-Orden de resolución (mismo patrón que contracts_path.py):
-1. Variable de entorno ARGOS_CONTROL_PATH (CI: checkout hermano en
-   _control/, ver .github/workflows/ci.yaml y
-   argos-control/.github/workflows/reusable-python-ci.yaml).
-2. `fallback` que pase el caller -- en harness/traceability.py es
-   `org_root / "argos-control"`, lo que preserva el comportamiento de
-   tests/test_traceability.py (construye un org_root de tmp_path con
-   "argos-control" como subdirectorio literal, sin variables de entorno).
+Solo la variable de entorno: a diferencia de contracts_path.py, este
+resolver NO intenta un fallback "hermano por convención" propio, porque
+harness/traceability._load_backlog ya tiene su propio fallback
+(org_root / "argos-control") y es el único caller — mezclar ambos aquí
+haría imposible distinguir "sin argos-control disponible" (aislamiento
+deliberado en tests/test_traceability.py, que siempre pasa org_root
+explícito) de "argos-control real vía checkout de CI" (org_root
+defaulteado). Ver harness/traceability.py:validate() para dónde se
+decide cuál aplica.
 """
 from __future__ import annotations
 
@@ -17,17 +21,9 @@ import pathlib
 CONTROL_ENV_VAR = "ARGOS_CONTROL_PATH"
 
 
-def resolve_control_path(*, fallback: pathlib.Path) -> pathlib.Path | None:
-    """Devuelve la ruta al checkout de argos-control, o None si no está
-    disponible -- a diferencia de contracts_path.resolve_contracts_path(),
-    no lanza: los callers de este módulo (harness/traceability.py) ya
-    tratan "no disponible" como warning, no como error fatal (TRACE-01
-    solo puede cruzar story_ids si el backlog real está accesible, pero
-    un checkout local sin los 7 repos hermanos sigue siendo un uso
-    legítimo)."""
+def resolve_control_path_from_env() -> pathlib.Path | None:
     env_value = os.environ.get(CONTROL_ENV_VAR)
-    if env_value:
-        path = pathlib.Path(env_value).expanduser().resolve()
-        return path if path.exists() else None
-
-    return fallback if fallback.exists() else None
+    if not env_value:
+        return None
+    path = pathlib.Path(env_value).expanduser().resolve()
+    return path if path.exists() else None
