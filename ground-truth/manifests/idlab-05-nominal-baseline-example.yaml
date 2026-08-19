@@ -1,22 +1,65 @@
-# EJEMPLO de formato IDLAB-05 (ADR-070) -- NO es una captura real.
+# EJEMPLO de formato IDLAB-05 v2 (ADR-070) -- NO es una captura real.
 # Ningún laboratorio OpenNebula/Wazuh real existe todavía
 # (BLOCKED_EXTERNAL, ver ground-truth/README.md). Este manifiesto
 # demuestra que el schema y el loader funcionan de verdad
 # (harness.loaders.detection_ground_truth.load_nominal_baseline_manifest),
-# no afirma telemetría nominal real.
-baseline_id: idlab-05-example-001
-capture_window:
-  start: "2026-08-18T00:00:00Z"
-  end: "2026-08-18T06:00:00Z"
-hosts:
-  - idlab-host-1
-  - idlab-host-2
-  - idlab-host-3
-source_mode: SYNTHETIC
-event_count: null
-known_attacks_present: false
+# no afirma telemetría nominal real. dataset.is_example: true fuerza
+# source_mode=SYNTHETIC por schema -- este fixture no puede
+# "convertirse" en REAL por error.
+manifest_id: idlab-05-example-001
+schema_version: "2.0.0"
 notes: >-
   Placeholder de formato -- sustituir por una captura real de IDLAB-05
   (LAB-K8S o LAB-VM, ver ground-truth/README.md) cuando el laboratorio
-  exista. event_count=null porque no hay eventos reales que contar
-  todavía.
+  exista.
+
+dataset:
+  dataset_id: idlab-05-example-dataset-001
+  source_mode: SYNTHETIC
+  known_attacks_present: false
+  capture_start: "2026-08-18T00:00:00Z"
+  capture_end: "2026-08-18T06:00:00Z"
+  event_count: null
+  is_example: true
+
+environment:
+  environment_id: idlab-env-example-001
+  topology_ref: idlab://topologies/lab-k8s-mvp
+  environment_snapshot_ref: null
+  xdr:
+    wazuh_config_ref: idlab://config/wazuh/ossec.conf@example
+    wazuh_ruleset_ref: idlab://config/wazuh/ruleset@example
+    falco_rules_ref: idlab://config/falco/rules@example
+    cilium_config_ref: idlab://config/cilium/policy@example
+  monitored_targets:
+    - {target_id: idlab-host-1, target_type: kubernetes_workload, role: web-frontend}
+    - {target_id: idlab-host-2, target_type: kubernetes_workload, role: api-backend}
+    - {target_id: idlab-host-3, target_type: kubernetes_workload, role: database}
+
+provenance:
+  repository_commits: {argos-platform: "0000000000000000000000000000000000example"}
+  configuration_hashes: {wazuh_ruleset: "example-hash-not-real", falco_rules: "example-hash-not-real"}
+  source_refs: []
+  collector_versions: {wazuh-agent: "0.0.0-example", falco: "0.0.0-example"}
+  generated_at: "2026-08-18T06:05:00Z"
+
+capture:
+  sources: [wazuh, falco, hubble]
+  maintenance_windows: []
+  excluded_intervals: []
+
+contamination_check:
+  required: true
+  known_attack_scan_performed: true
+  unexpected_attack_markers: []
+  contamination_status: CLEAN
+  evidence_refs: []
+
+records:
+  manifest_ref: null
+  count: null
+  hash: null
+
+evidence:
+  evidence_manifest_ref: null
+  evidence_root_ref: null

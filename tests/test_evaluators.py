@@ -478,3 +478,153 @@ def test_dataset_integrity_empty_sets_is_zero():
     metric = dataset_integrity.evaluate([], [])
     assert metric.value == 0.0
     assert metric.sample_size == 0
+
+
+# ---------------------------------------------------------------------------
+# dataset_integrity v2 (IDLAB-06 ScenarioRun, ADR-070): checks adicionales
+# a nivel de scenario_run_id/split_group/event_ref/evidence_ref/
+# label_provenance -- ver evaluators/dataset_integrity/__init__.py.
+# ---------------------------------------------------------------------------
+
+
+def test_scenario_run_id_leakage_is_zero_when_all_ids_distinct():
+    runs = [
+        {"scenario_run_id": "run-1", "split": "TRAIN"},
+        {"scenario_run_id": "run-2", "split": "TEST"},
+    ]
+    metric = dataset_integrity.evaluate_scenario_run_id_leakage(runs)
+    assert metric.value == 0.0
+
+
+def test_scenario_run_id_leakage_detects_same_id_in_both_splits():
+    runs = [
+        {"scenario_run_id": "run-1", "split": "TRAIN"},
+        {"scenario_run_id": "run-1", "split": "TEST"},
+    ]
+    metric = dataset_integrity.evaluate_scenario_run_id_leakage(runs)
+    assert metric.value == 1.0
+    assert "run-1" in metric.detail
+
+
+def test_split_group_leakage_is_zero_when_groups_distinct():
+    runs = [
+        {"scenario_run_id": "run-1", "split": "TRAIN", "split_group": "campaign-a"},
+        {"scenario_run_id": "run-2", "split": "TEST", "split_group": "campaign-b"},
+    ]
+    metric = dataset_integrity.evaluate_split_group_leakage(runs)
+    assert metric.value == 0.0
+
+
+def test_split_group_leakage_detects_same_group_in_both_splits():
+    runs = [
+        {"scenario_run_id": "run-1", "split": "TRAIN", "split_group": "campaign-a"},
+        {"scenario_run_id": "run-2", "split": "TEST", "split_group": "campaign-a"},
+    ]
+    metric = dataset_integrity.evaluate_split_group_leakage(runs)
+    assert metric.value == 1.0
+
+
+def test_split_group_leakage_ignores_runs_without_split_group():
+    """split_group es opcional -- un run sin declararlo no aporta clave
+    (no se penaliza ni se cuenta como fuga)."""
+    runs = [
+        {"scenario_run_id": "run-1", "split": "TRAIN"},
+        {"scenario_run_id": "run-2", "split": "TEST"},
+    ]
+    metric = dataset_integrity.evaluate_split_group_leakage(runs)
+    assert metric.value == 0.0
+    assert metric.sample_size == 2
+
+
+def test_event_ref_leakage_is_zero_when_no_overlap():
+    runs = [
+        {"scenario_run_id": "run-1", "split": "TRAIN", "observed": {"event_refs": ["e1", "e2"]}},
+        {"scenario_run_id": "run-2", "split": "TEST", "observed": {"event_refs": ["e3"]}},
+    ]
+    metric = dataset_integrity.evaluate_event_ref_leakage(runs)
+    assert metric.value == 0.0
+
+
+def test_event_ref_leakage_detects_shared_event_ref():
+    runs = [
+        {"scenario_run_id": "run-1", "split": "TRAIN", "observed": {"event_refs": ["e1"]}},
+        {"scenario_run_id": "run-2", "split": "TEST", "observed": {"event_refs": ["e1"]}},
+    ]
+    metric = dataset_integrity.evaluate_event_ref_leakage(runs)
+    assert metric.value == 1.0
+
+
+def test_evidence_ref_leakage_is_zero_when_no_overlap():
+    runs = [
+        {"scenario_run_id": "run-1", "split": "TRAIN", "observed": {"evidence_refs": ["ev1"]}},
+        {"scenario_run_id": "run-2", "split": "TEST", "observed": {"evidence_refs": ["ev2"]}},
+    ]
+    metric = dataset_integrity.evaluate_evidence_ref_leakage(runs)
+    assert metric.value == 0.0
+
+
+def test_evidence_ref_leakage_detects_shared_evidence_ref():
+    runs = [
+        {"scenario_run_id": "run-1", "split": "TRAIN", "observed": {"evidence_refs": ["ev1"]}},
+        {"scenario_run_id": "run-2", "split": "TEST", "observed": {"evidence_refs": ["ev1"]}},
+    ]
+    metric = dataset_integrity.evaluate_evidence_ref_leakage(runs)
+    assert metric.value == 1.0
+
+
+def test_label_provenance_is_zero_for_legitimate_sources():
+    runs = [
+        {"scenario_run_id": "run-1", "ground_truth": {"label_source": "atomic_red_team"}},
+        {"scenario_run_id": "run-2", "ground_truth": {"label_source": "human_reviewed_campaign"}},
+    ]
+    metric = dataset_integrity.evaluate_label_provenance(runs)
+    assert metric.value == 0.0
+
+
+def test_label_provenance_detects_detector_output_as_source():
+    """El caso concreto que motiva este check: nunca 'Wazuh disparó, luego
+    ataque=true' -- convertiría al sistema evaluado en el productor de su
+    propia verdad."""
+    runs = [{"scenario_run_id": "run-1", "ground_truth": {"label_source": "detector_output"}}]
+    metric = dataset_integrity.evaluate_label_provenance(runs)
+    assert metric.value == 1.0
+
+
+def test_evaluate_scenario_runs_returns_all_five_checks():
+    runs = [
+        {
+            "scenario_run_id": "run-1",
+            "split": "TRAIN",
+            "split_group": "campaign-a",
+            "observed": {"event_refs": ["e1"], "evidence_refs": ["ev1"]},
+            "ground_truth": {"label_source": "atomic_red_team"},
+        },
+        {
+            "scenario_run_id": "run-2",
+            "split": "TEST",
+            "split_group": "campaign-b",
+            "observed": {"event_refs": ["e2"], "evidence_refs": ["ev2"]},
+            "ground_truth": {"label_source": "human_reviewed_campaign"},
+        },
+    ]
+    metrics = dataset_integrity.evaluate_scenario_runs(runs)
+    assert len(metrics) == 5
+    assert all(m.value == 0.0 for m in metrics)
+
+
+def test_baseline_contamination_is_zero_when_clean():
+    manifest = {"contamination_check": {"contamination_status": "CLEAN", "unexpected_attack_markers": []}}
+    metric = dataset_integrity.evaluate_baseline_contamination(manifest)
+    assert metric.value == 0.0
+
+
+def test_baseline_contamination_detects_unexpected_attack_markers():
+    manifest = {"contamination_check": {"contamination_status": "CLEAN", "unexpected_attack_markers": ["marker-1"]}}
+    metric = dataset_integrity.evaluate_baseline_contamination(manifest)
+    assert metric.value == 1.0
+
+
+def test_baseline_contamination_detects_contaminated_status():
+    manifest = {"contamination_check": {"contamination_status": "CONTAMINATED", "unexpected_attack_markers": []}}
+    metric = dataset_integrity.evaluate_baseline_contamination(manifest)
+    assert metric.value == 1.0

@@ -1,13 +1,86 @@
-# EJEMPLO de formato IDLAB-06 (ADR-070) -- NO son etiquetas reales de un
-# SOC. Ningún laboratorio real existe todavía (BLOCKED_EXTERNAL, ver
-# ground-truth/README.md). Demuestra el formato Y la separación
-# train/test por (scenario_id, host_id) -- no por fila al azar (DE-27):
-# obsérvese que S1/S2 aparecen SOLO en train (todos sus hosts) y S3/S4
-# SOLO en test -- ningún (scenario_id, host_id) se repite entre ambos.
-dataset_id: idlab-06-example-001
-records:
-  - {scenario_id: S1, host_id: idlab-host-1, label: ATTACK, source_mode: SYNTHETIC, split: train, weak_signal_refs: []}
-  - {scenario_id: S1, host_id: idlab-host-2, label: ATTACK, source_mode: SYNTHETIC, split: train, weak_signal_refs: []}
-  - {scenario_id: S2, host_id: idlab-host-1, label: BENIGN, source_mode: SYNTHETIC, split: train, weak_signal_refs: []}
-  - {scenario_id: S3, host_id: idlab-host-3, label: ATTACK, source_mode: SYNTHETIC, split: test, weak_signal_refs: []}
-  - {scenario_id: S4, host_id: idlab-host-3, label: BENIGN, source_mode: SYNTHETIC, split: test, weak_signal_refs: []}
+# EJEMPLO de formato IDLAB-06 v2 (ADR-070) -- NO son etiquetas reales de
+# un SOC. Ningún laboratorio real existe todavía (BLOCKED_EXTERNAL, ver
+# ground-truth/README.md). Demuestra el formato ScenarioRun completo Y la
+# separación TRAIN/TEST por scenario_run_id (nunca por evento individual,
+# DE-27): run-001/002/003 (S1/S2) están SOLO en train, run-004/005
+# (S3/S4) SOLO en test -- ningún scenario_run_id, event_ref, evidence_ref
+# ni split_group se repite entre ambos lados. is_example: true fuerza
+# source_mode=SYNTHETIC en todos los scenario_runs por schema.
+manifest_id: idlab-06-example-001
+schema_version: "2.0.0"
+dataset_id: idlab-06-example-dataset-001
+environment_ref: idlab-env-example-001
+baseline_ref: idlab-05-example-001
+is_example: true
+
+provenance:
+  repository_commits: {argos-platform: "0000000000000000000000000000000000example"}
+  configuration_hashes: {wazuh_ruleset: "example-hash-not-real", falco_rules: "example-hash-not-real"}
+  injector_versions: {atomic-red-team: "0.0.0-example", chaos-mesh: "0.0.0-example"}
+  generated_at: "2026-08-18T07:00:00Z"
+
+scenario_runs:
+  - scenario_run_id: run-001
+    scenario_id: S1
+    scenario: {family: credential-access, attack_or_chaos: ATTACK, attack_framework: "Atomic Red Team", attack_technique_ref: T1552, mitre_ids: [T1552]}
+    target: {target_id: idlab-host-1, target_type: kubernetes_workload}
+    execution: {started_at: "2026-08-18T07:05:00Z", ended_at: "2026-08-18T07:10:00Z", injector_ref: atomic-red-team, injector_run_id: art-run-001}
+    expected: {observables: [example-observable-1], affected_entities: [idlab-host-1]}
+    observed: {event_refs: [event-001, event-002], evidence_refs: [evidence-001]}
+    ground_truth: {label: ATTACK, label_source: atomic_red_team, authoritative_source_ref: "art://runs/art-run-001"}
+    source_mode: SYNTHETIC
+    split: TRAIN
+    split_group: campaign-alpha
+    evidence: {evidence_manifest_ref: null, evidence_root_ref: null}
+
+  - scenario_run_id: run-002
+    scenario_id: S1
+    scenario: {family: credential-access, attack_or_chaos: ATTACK, attack_framework: "Atomic Red Team", attack_technique_ref: T1552, mitre_ids: [T1552]}
+    target: {target_id: idlab-host-2, target_type: kubernetes_workload}
+    execution: {started_at: "2026-08-18T07:15:00Z", ended_at: "2026-08-18T07:20:00Z", injector_ref: atomic-red-team, injector_run_id: art-run-002}
+    expected: {observables: [example-observable-1], affected_entities: [idlab-host-2]}
+    observed: {event_refs: [event-003, event-004], evidence_refs: [evidence-002]}
+    ground_truth: {label: ATTACK, label_source: atomic_red_team, authoritative_source_ref: "art://runs/art-run-002"}
+    source_mode: SYNTHETIC
+    split: TRAIN
+    split_group: campaign-alpha
+    evidence: {evidence_manifest_ref: null, evidence_root_ref: null}
+
+  - scenario_run_id: run-003
+    scenario_id: S2
+    scenario: {family: baseline-continuation, attack_or_chaos: ATTACK, attack_framework: "scenario orchestrator", mitre_ids: []}
+    target: {target_id: idlab-host-1, target_type: kubernetes_workload}
+    execution: {started_at: "2026-08-18T07:25:00Z", ended_at: "2026-08-18T07:30:00Z"}
+    expected: {observables: [], affected_entities: []}
+    observed: {event_refs: [event-005], evidence_refs: [evidence-003]}
+    ground_truth: {label: BENIGN, label_source: scenario_orchestrator, authoritative_source_ref: "orchestrator://campaigns/campaign-alpha/run-003"}
+    source_mode: SYNTHETIC
+    split: TRAIN
+    split_group: campaign-alpha
+    evidence: {evidence_manifest_ref: null, evidence_root_ref: null}
+
+  - scenario_run_id: run-004
+    scenario_id: S3
+    scenario: {family: resilience-fault-injection, attack_or_chaos: CHAOS, attack_framework: "Chaos Mesh", mitre_ids: []}
+    target: {target_id: idlab-host-3, target_type: kubernetes_workload}
+    execution: {started_at: "2026-08-18T08:05:00Z", ended_at: "2026-08-18T08:10:00Z", injector_ref: chaos-mesh, injector_run_id: chaos-run-001}
+    expected: {observables: [example-observable-2], affected_entities: [idlab-host-3]}
+    observed: {event_refs: [event-006], evidence_refs: [evidence-004]}
+    ground_truth: {label: ATTACK, label_source: chaos_mesh_experiment, authoritative_source_ref: "chaosmesh://experiments/chaos-run-001"}
+    source_mode: SYNTHETIC
+    split: TEST
+    split_group: campaign-beta
+    evidence: {evidence_manifest_ref: null, evidence_root_ref: null}
+
+  - scenario_run_id: run-005
+    scenario_id: S4
+    scenario: {family: baseline-continuation, attack_or_chaos: ATTACK, attack_framework: "human-reviewed campaign", mitre_ids: []}
+    target: {target_id: idlab-host-3, target_type: kubernetes_workload}
+    execution: {started_at: "2026-08-18T08:15:00Z", ended_at: "2026-08-18T08:20:00Z"}
+    expected: {observables: [], affected_entities: []}
+    observed: {event_refs: [event-007], evidence_refs: [evidence-005]}
+    ground_truth: {label: BENIGN, label_source: human_reviewed_campaign, authoritative_source_ref: "review://campaigns/campaign-beta/run-005"}
+    source_mode: SYNTHETIC
+    split: TEST
+    split_group: campaign-beta
+    evidence: {evidence_manifest_ref: null, evidence_root_ref: null}
